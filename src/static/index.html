@@ -12,7 +12,9 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   
   <link rel="stylesheet" href="/static/styles.css">
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%200%22%20100%22%20100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/static/favicon.svg">
 </head>
 <body>
   <!-- Ambient Atmospheric Backdrops -->
@@ -28,15 +30,9 @@
     <!-- Top Navigation / Brand Bar -->
     <header class="app-header">
       <div class="brand-group">
-        <div class="solar-orb-icon" aria-hidden="true">
-          <div class="orb-core"></div>
-          <div class="orb-ring ring-1"></div>
-          <div class="orb-ring ring-2"></div>
-        </div>
-        <div>
-          <div class="brand-title">SunSync</div>
-          <div class="brand-tagline">480nm Melanopic Photobiology Engine</div>
-        </div>
+        <a href="/" class="brand-link">
+          <img src="/static/logo.svg" alt="SunSync Logo" class="brand-logo-img" height="46">
+        </a>
       </div>
 
       <div class="system-status-pills">

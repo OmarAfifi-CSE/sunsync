@@ -48,51 +48,36 @@ class GemmaDirectiveService:
             except Exception:
                 pass
 
-        # 2. Try Google Gemma Official Models Strictly
+        # 2. Try Google Gemma Official Model with fast 2.5s timeout
         if self.google_api_key:
-            for model_name in ["gemma-4-31b-it", "gemma-4-26b-a4b-it"]:
-                try:
-                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={self.google_api_key}"
-                    payload = {
-                        "contents": [{"parts": [{"text": prompt}]}],
-                        "generationConfig": {
-                            "maxOutputTokens": 600,
-                            "temperature": 0.6
-                        }
-                    }
-                    resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=10.0)
-                    if resp.status_code == 200:
-                        parts = resp.json()["candidates"][0]["content"]["parts"]
-                        # Extract final response part (filtering out reasoning tokens)
-                        answer_parts = [p["text"] for p in parts if not p.get("thought", False)]
-                        text = answer_parts[-1].strip() if answer_parts else parts[-1]["text"].strip()
-                        if text:
-                            return text.strip('"*#')
-                except Exception:
-                    continue
-
-        # 3. Try Hugging Face Serverless Inference for Gemma 2
-        if self.hf_api_key:
             try:
-                headers = {"Authorization": f"Bearer {self.hf_api_key}"}
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent?key={self.google_api_key}"
                 payload = {
-                    "inputs": f"<start_of_turn>user\n{prompt}<end_of_turn>\n<start_of_turn>model\n",
-                    "parameters": {"max_new_tokens": 80, "temperature": 0.6}
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {
+                        "maxOutputTokens": 120,
+                        "temperature": 0.4
+                    }
                 }
-                resp = requests.post(
-                    "https://api-inference.huggingface.co/models/google/gemma-2-2b-it",
-                    json=payload,
-                    headers=headers,
-                    timeout=5.0
-                )
+                resp = requests.post(url, json=payload, headers={"Content-Type": "application/json"}, timeout=2.5)
                 if resp.status_code == 200:
                     data = resp.json()
-                    if isinstance(data, list) and "generated_text" in data[0]:
-                        gen = data[0]["generated_text"].split("<start_of_turn>model\n")[-1].strip()
-                        if gen:
-                            return gen.strip('"')
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            raw = parts[-1].get("text", "").strip()
+                            # Clean output: extract quoted text or meaningful sentence
+                            import re
+                            quotes = re.findall(r'"([^"]{20,160})"', raw)
+                            if quotes:
+                                return quotes[0].strip()
+                            clean_lines = [l.strip(' *#-') for l in raw.splitlines() if len(l.strip(' *#-')) > 20 and not l.strip().startswith(('Context', 'Goal', 'Constraint', 'Input', 'Persona'))]
+                            if clean_lines:
+                                return clean_lines[-1].strip('"')
             except Exception:
                 pass
+
 
         # 4. Resilient Edge Synthesis Fallback (Modeled after Gemma 2 instruction-tuned outputs)
         if uv_index < 3.0:

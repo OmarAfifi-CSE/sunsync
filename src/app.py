@@ -159,12 +159,20 @@ STATIC_DIR = SRC_DIR / "static"
 if STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
+@app.get("/favicon.ico")
+def serve_favicon():
+    favicon_path = STATIC_DIR / "favicon.svg"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path), media_type="image/svg+xml")
+    raise HTTPException(status_code=404, detail="Favicon not found")
+
 @app.get("/")
 def serve_index():
     index_path = STATIC_DIR / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
     return {"status": "ok", "message": "SunSync API active. Static dashboard folder not initialized."}
+
 
 if __name__ == "__main__":
     import uvicorn

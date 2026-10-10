@@ -14,7 +14,7 @@
 
 *An offline-first, edge intelligence application that models atmospheric telemetry and photobiological daylight flux using Prior Labs' TabPFN, calculating the exact zero-screen solar recharge window to reverse developer burnout and circadian disruption.*
 
-[**Live Production App (Render)**](https://sunsync.onrender.com/) • [**Read DEV.to Submission Post**](https://dev.to) • [**Scientific Literature Review**](#-peer-reviewed-scientific-foundations)
+[**Live Production App (Render)**](https://sunsync-engine.onrender.com/) • [**Read DEV.to Submission Post**](https://dev.to) • [**Scientific Literature Review**](#-peer-reviewed-scientific-foundations)
 
 </div>
 

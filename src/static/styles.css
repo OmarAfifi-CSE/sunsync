@@ -112,6 +112,22 @@ body {
   gap: 14px;
 }
 
+.brand-link {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  transition: transform 0.25s ease, filter 0.25s ease;
+}
+.brand-link:hover {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.4));
+}
+.brand-logo-img {
+  height: 44px;
+  width: auto;
+  display: block;
+}
+
 .solar-orb-icon {
   position: relative;
   width: 44px;
