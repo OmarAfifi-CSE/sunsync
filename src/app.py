@@ -8,25 +8,32 @@ and Gemma 2 / ElevenLabs eyes-free synthesis.
 
 import os
 import time
+from dotenv import load_dotenv
 import sentry_sdk
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 
+# Load environment variables from .env
+load_dotenv()
+
 from data_service import AtmosphericDataService
 from circadian_ml import CircadianMLEngine
+from gemma_service import GemmaDirectiveService
 
 # ---------------------------------------------------------------------------
 # Sentry Observability & Distributed Tracing Setup
 # ---------------------------------------------------------------------------
-sentry_sdk.init(
-    dsn=os.getenv("SENTRY_DSN", "https://example_public_key@o0.ingest.sentry.io/0"),
-    integrations=[FastApiIntegration()],
-    traces_sample_rate=1.0,
-    profiles_sample_rate=1.0,
-    environment=os.getenv("ENVIRONMENT", "production"),
-    release="sunsync@1.0.0",
-)
+sentry_dsn = os.getenv("SENTRY_DSN")
+if sentry_dsn:
+    sentry_sdk.init(
+        dsn=sentry_dsn,
+        integrations=[FastApiIntegration()],
+        traces_sample_rate=1.0,
+        profiles_sample_rate=1.0,
+        environment=os.getenv("ENVIRONMENT", "production"),
+        release="sunsync@1.0.0",
+    )
 
 app = FastAPI(
     title="SunSync Photobiology API",
@@ -87,21 +94,14 @@ def evaluate_solar_window(
         score = ml_result["circadian_recharge_score"]
         window = ml_result["window_time_formatted"]
         uv = ml_result["uv_index"]
+        cloud = int(telemetry_df.iloc[0].get("cloud_cover_pct", 20))
 
-        prompt = (
-            f"Generate a single 15-second spoken directive for a developer. "
-            f"Optimal solar recharge window is {window}. Circadian Score: {score}/100. UV Index: {uv}."
-        )
+        gemma_service = GemmaDirectiveService()
+        spoken_directive = gemma_service.generate_directive(window, score, uv, cloud)
 
         # Record LLM token metrics for Sentry Partner Category
         span_gemma.set_data("llm.model", "google/gemma-2-2b-it")
-        span_gemma.set_data("llm.estimated_prompt_tokens", len(prompt.split()) * 2)
-
-        spoken_directive = (
-            f"Your peak melanopic solar recharge window begins at {window}. "
-            f"Atmospheric UV is gentle at {uv}. Lock your screen, step outside into natural daylight, "
-            f"and let your retinal cells reset your circadian clock."
-        )
+        span_gemma.set_data("llm.estimated_prompt_tokens", 48)
         span_gemma.set_data("llm.estimated_completion_tokens", len(spoken_directive.split()) * 2)
 
     total_latency_ms = round((time.time() - pipeline_start) * 1000, 2)

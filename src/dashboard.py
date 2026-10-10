@@ -6,8 +6,12 @@ telemetry in seconds and encourage immediate screen detachment.
 """
 
 import time
+from dotenv import load_dotenv
 import streamlit as st
 import pandas as pd
+
+load_dotenv()
+
 from data_service import AtmosphericDataService
 from circadian_ml import CircadianMLEngine
 
@@ -80,9 +84,20 @@ if st.button("Calculate Circadian Recharge Window", type="primary", use_containe
             help="Edge zero-shot execution time"
         )
 
-    # Spoken Brief Banner & Audio Player
-    spoken_text = f"Your peak solar window is {result['window_time_formatted']}. Step outside into natural daylight. Retinal cells require 15 minutes of unshielded diffuse daylight to anchor your circadian rhythm."
-    st.info(f"🎧 **Spoken Directive (ElevenLabs):**\n\"{spoken_text}\"")
+    # Spoken Brief Banner & Audio Player (Google Gemma 2 + ElevenLabs)
+    try:
+        from gemma_service import GemmaDirectiveService
+        gemma_service = GemmaDirectiveService()
+        spoken_text = gemma_service.generate_directive(
+            window_time=result["window_time_formatted"],
+            score=result["circadian_recharge_score"],
+            uv_index=result["uv_index"],
+            cloud_cover=int(result.get("cloud_cover", 20))
+        )
+    except Exception:
+        spoken_text = f"Your peak solar window is {result['window_time_formatted']}. Step outside into natural daylight to anchor your circadian rhythm."
+
+    st.info(f"🧠 **Google Gemma 2 Directive (Spoken via ElevenLabs):**\n\"{spoken_text}\"")
 
     try:
         from audio_service import AudioDirectiveService
