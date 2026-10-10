@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sunsync-engine
+    env: python
+    region: frankfurt
+    plan: free
+    buildCommand: "pip install -r src/requirements.txt"
+    startCommand: "streamlit run src/dashboard.py --server.port $PORT --server.address 0.0.0.0"
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: SENTRY_DSN
+        sync: false
+      - key: ENVIRONMENT
+        value: production
