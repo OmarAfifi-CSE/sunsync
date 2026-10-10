@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SunSync | Edge Photobiology & Circadian Synchronization Engine</title>
+  <meta name="description" content="Sub-300ms circadian photobiology engine powered by Prior Labs TabPFN, Google Gemma 2, and Sentry distributed tracing.">
+  
+  <!-- Modern Typography: Outfit (Display), Plus Jakarta Sans (UI), JetBrains Mono (Telemetry) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%200%22%20100%22%20100%22><text y=%22.9em%22 font-size=%2290%22>☀️</text></svg>">
+</head>
+<body>
+  <!-- Ambient Atmospheric Backdrops -->
+  <div class="ambient-glow glow-top"></div>
+  <div class="ambient-glow glow-bottom"></div>
+
+  <!-- Toast Container -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <!-- Main Container -->
+  <div class="app-layout">
+    
+    <!-- Top Navigation / Brand Bar -->
+    <header class="app-header">
+      <div class="brand-group">
+        <div class="solar-orb-icon" aria-hidden="true">
+          <div class="orb-core"></div>
+          <div class="orb-ring ring-1"></div>
+          <div class="orb-ring ring-2"></div>
+        </div>
+        <div>
+          <div class="brand-title">SunSync</div>
+          <div class="brand-tagline">480nm Melanopic Photobiology Engine</div>
+        </div>
+      </div>
+
+      <div class="system-status-pills">
+        <span class="status-badge">
+          <span class="pulse-dot"></span>
+          <span>TabPFN Ready</span>
+        </span>
+        <span class="status-badge observability">
+          <span class="sentry-dot"></span>
+          <span>Sentry Tracing</span>
+        </span>
+        <a href="https://github.com/omarr-gamal/Hacktoberfest-Challenge" target="_blank" rel="noopener noreferrer" class="github-badge" title="Source Code">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+          </svg>
+          <span>GitHub</span>
+        </a>
+      </div>
+    </header>
+
+    <!-- Hero Thesis Section -->
+    <section class="hero-thesis">
+      <div class="hero-badge">Prior Labs TabPFN · Google Gemma 2 · Sentry Agent Tracing</div>
+      <h1 class="hero-headline">
+        Anchor your master clock.<br>
+        <span class="gradient-text">Make screens the shortest part of your day.</span>
+      </h1>
+      <p class="hero-description">
+        SunSync ingests real-time atmospheric telemetry to compute peak melanopic solar flux with zero-shot TabPFN regression, delivering a 15-second eyes-free directive so you can step outside into natural daylight.
+      </p>
+    </section>
+
+    <!-- Solar Telemetry Control Panel -->
+    <section class="glass-card control-panel" aria-labelledby="coords-heading">
+      <div class="panel-header">
+        <div class="panel-title-group">
+          <div class="radar-dot"></div>
+          <h2 id="coords-heading" class="panel-title">Geographical Telemetry Coordinates</h2>
+        </div>
+        <button id="btn-geolocate" class="btn-geo" type="button" title="Detect your exact location via device GPS">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <polygon points="12 2 15 9 22 12 15 15 12 22 9 15 2 12 9 9 12 2"></polygon>
+          </svg>
+          <span>Detect My Location</span>
+        </button>
+      </div>
+
+      <!-- Quick City Selectors -->
+      <div class="city-chips-label">Popular Locations:</div>
+      <div class="city-chips" role="radiogroup" aria-label="Preset Locations">
+        <button type="button" class="chip active" data-lat="30.5877" data-lon="31.3468">Zagazig / Cairo (Default)</button>
+        <button type="button" class="chip" data-lat="51.5074" data-lon="-0.1278">London</button>
+        <button type="button" class="chip" data-lat="37.7749" data-lon="-122.4194">San Francisco</button>
+        <button type="button" class="chip" data-lat="35.6762" data-lon="139.6503">Tokyo</button>
+        <button type="button" class="chip" data-lat="52.5200" data-lon="13.4050">Berlin</button>
+        <button type="button" class="chip" data-lat="-33.8688" data-lon="151.2093">Sydney</button>
+      </div>
+
+      <!-- Coordinate Form -->
+      <form id="solar-form" class="coords-form" onsubmit="return false;">
+        <div class="input-field">
+          <label for="input-lat">Latitude (°N)</label>
+          <div class="input-wrap">
+            <input type="number" id="input-lat" step="0.0001" min="-90" max="90" value="30.5877" required>
+            <span class="input-unit">LAT</span>
+          </div>
+        </div>
+
+        <div class="input-field">
+          <label for="input-lon">Longitude (°E)</label>
+          <div class="input-wrap">
+            <input type="number" id="input-lon" step="0.0001" min="-180" max="180" value="31.3468" required>
+            <span class="input-unit">LON</span>
+          </div>
+        </div>
+
+        <button id="btn-calculate" type="submit" class="btn-calculate">
+          <span class="btn-shine"></span>
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">Calculate Peak Solar Window</span>
+          <div class="btn-spinner" aria-hidden="true"></div>
+        </button>
+      </form>
+    </section>
+
+    <!-- Live Results Section (Revealed upon calculation) -->
+    <main id="results-container" class="results-container visible">
+      
+      <!-- Key Telemetry Metrics Grid -->
+      <div class="metrics-grid">
+        
+        <!-- Metric 1: Peak Window -->
+        <div class="metric-card gold-accent">
+          <div class="metric-header">
+            <span class="metric-eyebrow">Optimal Melanopic Window</span>
+            <span class="metric-badge">PEAK FLUX</span>
+          </div>
+          <div id="val-window" class="metric-value font-mono">14:15 – 14:35</div>
+          <div class="metric-footer">
+            <span class="indicator-icon">☀️</span>
+            <span id="txt-window-hint">Synchronizes master SCN clock</span>
+          </div>
+        </div>
+
+        <!-- Metric 2: Circadian Score Radial Gauge -->
+        <div class="metric-card amber-accent gauge-card">
+          <div class="metric-header">
+            <span class="metric-eyebrow">Circadian Recharge Score</span>
+            <span class="metric-badge">CRS INDEX</span>
+          </div>
+          <div class="gauge-content">
+            <div class="radial-gauge-container">
+              <svg class="radial-gauge" viewBox="0 0 100 100" width="88" height="88">
+                <circle class="gauge-bg" cx="50" cy="50" r="42"></circle>
+                <circle id="gauge-fill" class="gauge-bar" cx="50" cy="50" r="42" stroke-dasharray="263.89" stroke-dashoffset="30"></circle>
+              </svg>
+              <div class="gauge-center-text font-mono">
+                <span id="val-score">88.5</span>
+                <span class="gauge-denom">/100</span>
+              </div>
+            </div>
+            <div class="gauge-meta">
+              <div class="gauge-title" id="val-efficacy-title">High Photonic Efficacy</div>
+              <div class="gauge-subtitle">Saturates retinal melanopsin cells</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Metric 3: UV Safety Index -->
+        <div class="metric-card cyan-accent">
+          <div class="metric-header">
+            <span class="metric-eyebrow">Atmospheric UV Safety</span>
+            <span id="badge-uv-status" class="metric-badge uv-safe">SAFE VIEWING</span>
+          </div>
+          <div class="uv-metric-row">
+            <div id="val-uv" class="metric-value font-mono">2.8</div>
+            <div class="uv-scale-track">
+              <div id="uv-scale-marker" class="uv-scale-fill" style="width: 28%;"></div>
+            </div>
+          </div>
+          <div class="metric-footer">
+            <span class="indicator-icon">🛡️</span>
+            <span id="txt-uv-hint">Gentle diffuse light; no glare hazard</span>
+          </div>
+        </div>
+
+        <!-- Metric 4: TabPFN Latency -->
+        <div class="metric-card emerald-accent">
+          <div class="metric-header">
+            <span class="metric-eyebrow">TabPFN Foundation ML</span>
+            <span class="metric-badge">SUB-300MS</span>
+          </div>
+          <div id="val-latency" class="metric-value font-mono">212<span class="metric-sub-unit">ms</span></div>
+          <div class="metric-footer">
+            <span class="indicator-icon">⚡</span>
+            <span id="val-model-arch">Prior Labs TabPFN Transformer</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gemma 2 Spoken Directive & Audio Player Card -->
+      <section class="glass-card directive-card" aria-label="AI Directive">
+        <div class="directive-topbar">
+          <div class="directive-badge">
+            <span class="ai-spark">✦</span>
+            <span>Google Gemma 2 Directive</span>
+          </div>
+          <button id="btn-copy-directive" class="btn-ghost" type="button" title="Copy spoken directive">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copy-text">Copy</span>
+          </button>
+        </div>
+
+        <blockquote id="directive-quote" class="directive-text">
+          "Your peak melanopic solar recharge window opens at 14:15. Atmospheric UV is gentle at 2.8, making it safe for unshielded viewing. Step outside into natural daylight and let your retinal cells anchor your master circadian clock."
+        </blockquote>
+
+        <!-- Eyes-Free Audio Player Bar -->
+        <div class="audio-control-bar">
+          <button id="btn-play-audio" class="btn-play" type="button" aria-label="Play Eyes-Free Voice Brief">
+            <svg id="icon-play" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <polygon points="5 3 19 12 5 21 5 3"></polygon>
+            </svg>
+            <svg id="icon-pause" class="hidden" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+              <rect x="6" y="4" width="4" height="16"></rect>
+              <rect x="14" y="4" width="4" height="16"></rect>
+            </svg>
+            <span id="audio-btn-label">Listen (15s Eyes-Free Brief)</span>
+          </button>
+
+          <div class="audio-waveforms" id="audio-waves" aria-hidden="true">
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+            <span class="wave-bar"></span>
+          </div>
+
+          <div class="audio-caption">
+            <span>Synthesized with ElevenLabs & Solfeggio 528Hz Chime</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Signature Element: 24-Hour Solar Photobiology Canvas Visualizer -->
+      <section class="glass-card chart-section" aria-labelledby="chart-heading">
+        <div class="chart-header">
+          <div>
+            <h2 id="chart-heading" class="section-heading">Hourly Melanopic Photobiology Profile</h2>
+            <div class="section-subheading">Equivalent Melanopic Lux (EML) vs Ambient UV Index (7:00 AM – 6:00 PM)</div>
+          </div>
+          <div class="chart-legend">
+            <div class="legend-item"><span class="legend-dot amber"></span>Circadian Score (480nm)</div>
+            <div class="legend-item"><span class="legend-dot cyan"></span>Atmospheric UV Index</div>
+          </div>
+        </div>
+
+        <div class="canvas-wrapper">
+          <canvas id="solar-chart-canvas" width="760" height="240"></canvas>
+          <div id="chart-tooltip" class="chart-tooltip"></div>
+        </div>
+
+        <div class="chart-footer-metrics">
+          <div class="footer-chip">
+            <span class="chip-label">Peak Solar Elevation:</span>
+            <span id="stat-solar-elevation" class="chip-val font-mono">58.4°</span>
+          </div>
+          <div class="footer-chip">
+            <span class="chip-label">Diffuse Irradiance:</span>
+            <span id="stat-diffuse-irr" class="chip-val font-mono">245 W/m²</span>
+          </div>
+          <div class="footer-chip">
+            <span class="chip-label">Optimal Wavelength:</span>
+            <span class="chip-val font-mono">480 nm (Blue Peak)</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Screen-Lock & Touch Grass Section -->
+      <section class="glass-card recharge-action-card">
+        <div class="recharge-badge">EPHEMERAL EDGE DESIGN</div>
+        <h2 class="recharge-title">Put The Screen Away & Touch Grass</h2>
+        <p class="recharge-desc">
+          The purpose of SunSync is not to keep you glued to this browser. Lock your workstation now, step into natural ambient light, and look at the open horizon for 20 minutes to reset your autonomic nervous system.
+        </p>
+        <button id="btn-start-detox" class="btn-detox" type="button">
+          <span class="detox-icon">🌿</span>
+          <span>Lock Screen & Start 20-Min Outdoor Detox</span>
+        </button>
+      </section>
+
+      <!-- Sentry Agent Tracing Observability HUD -->
+      <section class="glass-card sentry-hud" aria-labelledby="sentry-heading">
+        <div class="sentry-hud-header">
+          <div class="sentry-title-wrap">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" class="sentry-logo">
+              <path d="M13.2 2.4a2.4 2.4 0 0 0-2.4 0L3.6 6.6a2.4 2.4 0 0 0-1.2 2.1v8.4a2.4 2.4 0 0 0 1.2 2.1l7.2 4.2a2.4 2.4 0 0 0 2.4 0l7.2-4.2a2.4 2.4 0 0 0 1.2-2.1V8.7a2.4 2.4 0 0 0-1.2-2.1L13.2 2.4zm-1.2 2.4 6 3.5-6 3.5-6-3.5 6-3.5zm-7.2 5.6 6 3.5v7l-6-3.5v-7zm8.4 10.5v-7l6-3.5v7l-6 3.5z"/>
+            </svg>
+            <h2 id="sentry-heading" class="sentry-heading">Sentry Agent Distributed Tracing</h2>
+          </div>
+          <div class="sentry-total-latency font-mono">
+            <span>Total Pipeline: </span>
+            <strong id="val-total-latency">345.2ms</strong>
+          </div>
+        </div>
+
+        <div class="spans-gantt">
+          <!-- Span 1 -->
+          <div class="span-row">
+            <div class="span-info">
+              <span class="span-op">ai.telemetry.ingest</span>
+              <span class="span-name">Open-Meteo Atmospheric Telemetry</span>
+            </div>
+            <div class="span-bar-track">
+              <div id="span-bar-ingest" class="span-bar bar-ingest" style="width: 32%;"></div>
+            </div>
+            <div id="span-time-ingest" class="span-duration font-mono">112ms</div>
+          </div>
+
+          <!-- Span 2 -->
+          <div class="span-row">
+            <div class="span-info">
+              <span class="span-op">ai.model.tabpfn</span>
+              <span class="span-name">Prior Labs TabPFN Melanopic Regression</span>
+            </div>
+            <div class="span-bar-track">
+              <div id="span-bar-ml" class="span-bar bar-ml" style="width: 58%;"></div>
+            </div>
+            <div id="span-time-ml" class="span-duration font-mono">212ms</div>
+          </div>
+
+          <!-- Span 3 -->
+          <div class="span-row">
+            <div class="span-info">
+              <span class="span-op">ai.llm.gemma</span>
+              <span class="span-name">Google Gemma 2 Directive Synthesis</span>
+            </div>
+            <div class="span-bar-track">
+              <div id="span-bar-gemma" class="span-bar bar-gemma" style="width: 44%;"></div>
+            </div>
+            <div id="span-time-gemma" class="span-duration font-mono">152ms</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Scientific References Drawer -->
+      <details class="science-drawer">
+        <summary class="science-summary">
+          <span>📚 Photobiological Literature & Clinical References</span>
+          <span class="chevron">▾</span>
+        </summary>
+        <div class="science-content">
+          <div class="science-ref">
+            <strong>Hattar et al. (Science 2002)</strong>
+            <p>Melanopsin-expressing intrinsically photosensitive retinal ganglion cells (ipRGCs) provide photic input to synchronize the suprachiasmatic nucleus (SCN) master circadian pacemaker.</p>
+          </div>
+          <div class="science-ref">
+            <strong>Lucas et al. (Trends in Neurosciences 2014)</strong>
+            <p>Standardized measurement of Equivalent Melanopic Lux (EML) centered at peak 480nm photopigment sensitivity for circadian melatonin regulation.</p>
+          </div>
+          <div class="science-ref">
+            <strong>Huberman Lab (Stanford School of Medicine)</strong>
+            <p>Early-daylight retinal viewing drives the natural morning cortisol spike and sets a 14-to-16 hour biological countdown for nighttime melatonin secretion.</p>
+          </div>
+        </div>
+      </details>
+    </main>
+
+    <!-- App Footer -->
+    <footer class="app-footer">
+      <div>SunSync · Built with Prior Labs TabPFN, Google Gemma 2, Sentry Agent Tracing & ElevenLabs</div>
+      <div class="footer-links">
+        <a href="https://github.com/omarr-gamal/Hacktoberfest-Challenge" target="_blank" rel="noopener noreferrer">GitHub Repository</a>
+        <span>·</span>
+        <a href="/docs" target="_blank">FastAPI OpenAPI</a>
+        <span>·</span>
+        <a href="/health" target="_blank">System Health</a>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Full-Screen Meditative Detox Overlay -->
+  <div id="detox-modal" class="detox-modal" aria-hidden="true" role="dialog" aria-modal="true">
+    <div class="detox-backdrop"></div>
+    <div class="detox-content">
+      <div class="detox-zen-ring">
+        <div class="breathing-circle"></div>
+        <div class="zen-core">
+          <div id="detox-timer-display" class="detox-timer font-mono">20:00</div>
+          <div class="detox-phase-label">Breathe In ... Out</div>
+        </div>
+      </div>
+
+      <h2 class="detox-headline">Look Into The Open Horizon</h2>
+      <p class="detox-guidance">
+        Step outside or onto a balcony. Relax your ciliary eye muscles by expanding into panoramic vision. Let diffuse photons penetrate your retinas without straining or looking directly at the sun.
+      </p>
+
+      <div class="detox-actions">
+        <button id="btn-toggle-detox" class="btn-detox-pause" type="button">Pause Timer</button>
+        <button id="btn-exit-detox" class="btn-detox-exit" type="button">Return to Workstation</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

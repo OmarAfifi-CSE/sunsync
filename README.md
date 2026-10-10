@@ -14,7 +14,7 @@
 
 *An offline-first, edge intelligence application that models atmospheric telemetry and photobiological daylight flux using Prior Labs' TabPFN, calculating the exact zero-screen solar recharge window to reverse developer burnout and circadian disruption.*
 
-[**Live Demo (Streamlit)**](https://sunsync.onrender.com/) • [**Read DEV.to Submission Post**](https://dev.to) • [**Scientific Literature Review**](#-peer-reviewed-scientific-foundations)
+[**Live Production App (Render)**](https://sunsync.onrender.com/) • [**Read DEV.to Submission Post**](https://dev.to) • [**Scientific Literature Review**](#-peer-reviewed-scientific-foundations)
 
 </div>
 
@@ -108,17 +108,14 @@ cd sunsync
 pip install -r src/requirements.txt
 ```
 
-### 2. Launch the Web Interface (Streamlit)
+### 2. Launch the Web Interface (Instant Local Server)
 ```bash
-streamlit run src/dashboard.py
+python run_local.py
 ```
-Open your browser at `http://localhost:8501`.
+Open your browser at `http://localhost:8000`.
 
-### 3. (Optional) Run the REST API (FastAPI)
-```bash
-uvicorn src.app:app --host 0.0.0.0 --port 8000 --reload
-```
-API documentation available at `http://localhost:8000/docs`.
+### 3. API Documentation (FastAPI OpenAPI)
+With the server running, visit `http://localhost:8000/docs` for the interactive Swagger schema and `/health` for system health telemetry.
 
 ---
 

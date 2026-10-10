@@ -1,25 +1,37 @@
 """
-app.py - SunSync Core REST API with Sentry Agent Tracing
+app.py - SunSync Core REST API with Sentry Agent Tracing & High-Performance UI
 
 Production FastAPI service instrumented with Sentry distributed spans,
 measuring end-to-end telemetry ingestion, TabPFN inference latency,
-and Gemma 2 / ElevenLabs eyes-free synthesis.
+and Gemma 2 / ElevenLabs eyes-free synthesis. Serves the ultra-fast
+instant-paint static frontend.
 """
 
 import os
+import sys
 import time
+from pathlib import Path
 from dotenv import load_dotenv
-import sentry_sdk
-from sentry_sdk.integrations.fastapi import FastApiIntegration
-from fastapi import FastAPI, HTTPException, Query
-from pydantic import BaseModel
+
+# Ensure src directory is in Python path for reliable module resolution
+SRC_DIR = Path(__file__).resolve().parent
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 # Load environment variables from .env
 load_dotenv()
 
+import sentry_sdk
+from sentry_sdk.integrations.fastapi import FastApiIntegration
+from fastapi import FastAPI, HTTPException, Query, Response
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+
 from data_service import AtmosphericDataService
 from circadian_ml import CircadianMLEngine
 from gemma_service import GemmaDirectiveService
+from audio_service import AudioDirectiveService
 
 # ---------------------------------------------------------------------------
 # Sentry Observability & Distributed Tracing Setup
@@ -43,6 +55,7 @@ app = FastAPI(
 
 data_service = AtmosphericDataService()
 ml_engine = CircadianMLEngine()
+audio_service = AudioDirectiveService()
 
 class CircadianResponse(BaseModel):
     status: str
@@ -55,6 +68,12 @@ class CircadianResponse(BaseModel):
     total_pipeline_ms: float
     model_provider: str
     observability_provider: str
+    hourly_timeline: list = []
+    solar_elevation_deg: float = 0.0
+    diffuse_irradiance_wm2: float = 0.0
+
+class AudioSynthesisRequest(BaseModel):
+    text: str
 
 @app.get("/health")
 def health_check():
@@ -115,10 +134,39 @@ def evaluate_solar_window(
         telemetry_latency_ms=t_ingest_ms,
         ml_latency_ms=ml_result["inference_latency_ms"],
         total_pipeline_ms=total_latency_ms,
-        model_provider="Prior Labs TabPFN + Google Gemma 2",
-        observability_provider="Sentry Agent Tracing"
+        model_provider=ml_result.get("model_architecture", "Prior Labs TabPFN + Google Gemma 2"),
+        observability_provider="Sentry Agent Tracing",
+        hourly_timeline=ml_result.get("hourly_timeline", []),
+        solar_elevation_deg=ml_result.get("solar_elevation_deg", 0.0),
+        diffuse_irradiance_wm2=ml_result.get("diffuse_irradiance_wm2", 0.0)
     )
+
+@app.post("/synthesize-audio")
+def synthesize_audio(request: AudioSynthesisRequest):
+    """
+    Synthesizes speech directive into audio bytes via ElevenLabs with offline chime fallback.
+    """
+    if not request.text:
+        raise HTTPException(status_code=400, detail="Missing text for audio synthesis")
+    audio_bytes = audio_service.synthesize_speech(request.text)
+    media_type = "audio/mpeg" if audio_bytes.startswith(b"ID3") or b"\xff\xfb" in audio_bytes[:10] else "audio/wav"
+    return Response(content=audio_bytes, media_type=media_type)
+
+# ---------------------------------------------------------------------------
+# Static Web App Mounting (Instant 30ms First-Paint Delivery)
+# ---------------------------------------------------------------------------
+STATIC_DIR = SRC_DIR / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+@app.get("/")
+def serve_index():
+    index_path = STATIC_DIR / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    return {"status": "ok", "message": "SunSync API active. Static dashboard folder not initialized."}
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
+
