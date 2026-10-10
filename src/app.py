@@ -144,13 +144,15 @@ def evaluate_solar_window(
 @app.post("/synthesize-audio")
 def synthesize_audio(request: AudioSynthesisRequest):
     """
-    Synthesizes speech directive into audio bytes via ElevenLabs with offline chime fallback.
+    Synthesizes speech directive into genuine MP3 audio bytes via ElevenLabs.
     """
     if not request.text:
         raise HTTPException(status_code=400, detail="Missing text for audio synthesis")
-    audio_bytes = audio_service.synthesize_speech(request.text)
-    media_type = "audio/mpeg" if audio_bytes.startswith(b"ID3") or b"\xff\xfb" in audio_bytes[:10] else "audio/wav"
-    return Response(content=audio_bytes, media_type=media_type)
+    try:
+        audio_bytes = audio_service.synthesize_speech(request.text)
+        return Response(content=audio_bytes, media_type="audio/mpeg")
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=f"ElevenLabs TTS failed: {str(e)}")
 
 # ---------------------------------------------------------------------------
 # Static Web App Mounting (Instant 30ms First-Paint Delivery)
