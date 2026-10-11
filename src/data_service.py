@@ -12,14 +12,16 @@ import pandas as pd
 from datetime import datetime, timezone
 
 class AtmosphericDataService:
-    def __init__(self, latitude: float = 30.5877, longitude: float = 31.3468):
+    def __init__(self, latitude: float = 40.7128, longitude: float = -74.0060):
         """
-        Initializes coordinates (default: 30.5877° N, 31.3468° E).
+        Initializes coordinates (default: New York City 40.7128° N, 74.0060° W).
         Coordinates can be updated dynamically based on user location.
         """
         self.latitude = latitude
         self.longitude = longitude
         self.base_url = "https://api.open-meteo.com/v1/forecast"
+        # Seconds east of UTC for the queried cell (filled on fetch).
+        self.utc_offset_seconds = 0
 
     def fetch_solar_telemetry(self) -> pd.DataFrame:
         """
@@ -46,6 +48,22 @@ class AtmosphericDataService:
             data = response.json()
             hourly = data.get("hourly", {})
 
+            try:
+                self.utc_offset_seconds = int(data.get("utc_offset_seconds", 0))
+            except (TypeError, ValueError):
+                self.utc_offset_seconds = 0
+
+            required_series = [
+                "time",
+                "temperature_2m",
+                "direct_normal_irradiance",
+                "diffuse_radiation",
+                "uv_index",
+                "cloud_cover",
+            ]
+            if not hourly or any(k not in hourly or not hourly[k] for k in required_series):
+                raise ValueError("Incomplete hourly telemetry in Open-Meteo response.")
+
             df = pd.DataFrame({
                 "time": hourly.get("time", []),
                 "temperature_c": hourly.get("temperature_2m", []),
@@ -55,8 +73,22 @@ class AtmosphericDataService:
                 "cloud_cover_pct": hourly.get("cloud_cover", [])
             })
 
+            # Coerce every numeric series; any corruption falls back to offline cache
+            numeric_cols = [
+                "temperature_c",
+                "direct_irradiance_wm2",
+                "diffuse_irradiance_wm2",
+                "uv_index",
+                "cloud_cover_pct",
+            ]
+            for col in numeric_cols:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+            if df[numeric_cols].isna().all().all() or df.empty:
+                raise ValueError("Telemetry numerics failed to parse.")
+            df[numeric_cols] = df[numeric_cols].fillna(0.0)
+
             # Calculate approximate solar elevation angle based on hour index
-            df["hour"] = df["time"].apply(lambda t: int(t.split("T")[1].split(":")[0]))
+            df["hour"] = df["time"].apply(lambda t: int(str(t).split("T")[1].split(":")[0]))
             df["solar_elevation_deg"] = df["hour"].apply(self._estimate_solar_elevation)
             return df
 
@@ -79,6 +111,8 @@ class AtmosphericDataService:
         Generates deterministic, physically grounded atmospheric telemetry
         when operating in deep dead-zones with zero internet connection.
         """
+        # Rough longitude-based UTC estimate so place-clock still works offline.
+        self.utc_offset_seconds = int(round(self.longitude / 15.0)) * 3600
         records = []
         for h in range(24):
             elevation = self._estimate_solar_elevation(h)

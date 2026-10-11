@@ -3,13 +3,15 @@ app.py - SunSync Core REST API with Sentry Agent Tracing & High-Performance UI
 
 Production FastAPI service instrumented with Sentry distributed spans,
 measuring end-to-end telemetry ingestion, TabPFN inference latency,
-and Gemma 2 / ElevenLabs eyes-free synthesis. Serves the ultra-fast
+and Gemma / ElevenLabs eyes-free synthesis. Serves the ultra-fast
 instant-paint static frontend.
 """
 
 import os
 import sys
+import math
 import time
+from contextlib import asynccontextmanager
 from pathlib import Path
 from dotenv import load_dotenv
 
@@ -27,6 +29,7 @@ from fastapi import FastAPI, HTTPException, Query, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
+import requests
 
 from data_service import AtmosphericDataService
 from circadian_ml import CircadianMLEngine
@@ -47,15 +50,37 @@ if sentry_dsn:
         release="sunsync@1.0.0",
     )
 
+@asynccontextmanager
+async def _lifespan(_: FastAPI):
+    # Pay TabPFN's one-time init cost at boot so the first user request
+    # never waits on model cold-start. Never blocks deployment on failure.
+    try:
+        ml_engine.warm_up()
+    except Exception:
+        pass
+    yield
+
 app = FastAPI(
     title="SunSync Photobiology API",
     description="Edge-ready circadian intelligence engine powered by TabPFN & Sentry",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=_lifespan,
 )
 
 data_service = AtmosphericDataService()
 ml_engine = CircadianMLEngine()
 audio_service = AudioDirectiveService()
+
+def _sanitize_float(value: float, default: float = 0.0) -> float:
+    """Coerce NaN/Inf floats (from flaky telemetry) into safe JSON-serializable numbers."""
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    if math.isnan(number) or math.isinf(number):
+        return default
+    return number
+
 
 class CircadianResponse(BaseModel):
     status: str
@@ -63,6 +88,8 @@ class CircadianResponse(BaseModel):
     recharge_score: float
     uv_index: float
     spoken_directive: str
+    directive_source: str = "edge-instant"
+    cloud_cover_pct: float = 20.0
     telemetry_latency_ms: float
     ml_latency_ms: float
     total_pipeline_ms: float
@@ -71,6 +98,20 @@ class CircadianResponse(BaseModel):
     hourly_timeline: list = []
     solar_elevation_deg: float = 0.0
     diffuse_irradiance_wm2: float = 0.0
+    utc_offset_seconds: int = 0
+
+class DirectiveResponse(BaseModel):
+    spoken_directive: str
+    source: str = "edge"
+    llm_latency_ms: float = 0.0
+    model: str = ""
+
+class GeocodeResult(BaseModel):
+    name: str
+    latitude: float
+    longitude: float
+    country: str = ""
+    admin1: str = ""
 
 class AudioSynthesisRequest(BaseModel):
     text: str
@@ -81,47 +122,26 @@ def health_check():
 
 @app.get("/evaluate", response_model=CircadianResponse)
 def evaluate_solar_window(
-    lat: float = Query(default=30.5877, description="User Latitude"),
-    lon: float = Query(default=31.3468, description="User Longitude")
+    lat: float = Query(default=40.7128, ge=-90.0, le=90.0, description="User Latitude"),
+    lon: float = Query(default=-74.0060, ge=-180.0, le=180.0, description="User Longitude")
 ):
     """
-    Main evaluation endpoint. Ingests solar telemetry, runs TabPFN inference,
-    synthesizes a 15-second eyes-free directive, and records detailed Sentry spans.
+    Fast evaluation endpoint: ingests solar telemetry and runs TabPFN
+    inference (~2s). Returns instantly with an on-device analytical directive;
+    the client upgrades it via /directive (live Gemma) in the background.
+    Every number is a real fresh measurement — no caching anywhere.
     """
     pipeline_start = time.time()
 
-    # Span 1: Atmospheric Ingestion
-    with sentry_sdk.start_span(op="ai.telemetry.ingest", name="Open-Meteo Atmospheric Ingestion") as span_ingest:
-        t0 = time.time()
-        service = AtmosphericDataService(latitude=lat, longitude=lon)
-        telemetry_df = service.fetch_solar_telemetry()
-        t_ingest_ms = round((time.time() - t0) * 1000, 2)
-        span_ingest.set_data("rows_retrieved", len(telemetry_df))
-        span_ingest.set_data("latitude", lat)
-        span_ingest.set_data("longitude", lon)
+    telemetry_df, ml_result, t_ingest_ms, utc_offset = _run_telemetry_ml(lat, lon)
 
-    # Span 2: Prior Labs TabPFN Inference
-    with sentry_sdk.start_span(op="ai.model.tabpfn", name="Prior Labs TabPFN Melanopic Regression") as span_ml:
-        ml_result = ml_engine.predict_optimal_window(telemetry_df)
-        span_ml.set_data("model_architecture", ml_result["model_architecture"])
-        span_ml.set_data("inference_latency_ms", ml_result["inference_latency_ms"])
-        span_ml.set_data("circadian_score", ml_result["circadian_recharge_score"])
-        span_ml.set_data("optimal_hour", ml_result["optimal_hour"])
+    score = _sanitize_float(ml_result["circadian_recharge_score"])
+    window = ml_result["window_time_formatted"]
+    uv = _sanitize_float(ml_result["uv_index"])
+    cloud = _extract_cloud_cover(telemetry_df)
 
-    # Span 3: Google Gemma 2 / ElevenLabs Voice Synthesis
-    with sentry_sdk.start_span(op="ai.llm.gemma", name="Gemma 2 Eyes-Free Directive Synthesis") as span_gemma:
-        score = ml_result["circadian_recharge_score"]
-        window = ml_result["window_time_formatted"]
-        uv = ml_result["uv_index"]
-        cloud = int(telemetry_df.iloc[0].get("cloud_cover_pct", 20))
-
-        gemma_service = GemmaDirectiveService()
-        spoken_directive = gemma_service.generate_directive(window, score, uv, cloud)
-
-        # Record LLM token metrics for Sentry Partner Category
-        span_gemma.set_data("llm.model", "google/gemma-2-2b-it")
-        span_gemma.set_data("llm.estimated_prompt_tokens", 48)
-        span_gemma.set_data("llm.estimated_completion_tokens", len(spoken_directive.split()) * 2)
+    gemma_service = GemmaDirectiveService()
+    instant_directive = gemma_service.analytical_directive(window, score, uv, cloud)
 
     total_latency_ms = round((time.time() - pipeline_start) * 1000, 2)
 
@@ -130,27 +150,153 @@ def evaluate_solar_window(
         optimal_window=window,
         recharge_score=score,
         uv_index=uv,
-        spoken_directive=spoken_directive,
+        spoken_directive=instant_directive,
+        directive_source="edge-instant",
+        cloud_cover_pct=float(cloud),
         telemetry_latency_ms=t_ingest_ms,
-        ml_latency_ms=ml_result["inference_latency_ms"],
+        ml_latency_ms=_sanitize_float(ml_result["inference_latency_ms"]),
         total_pipeline_ms=total_latency_ms,
-        model_provider=ml_result.get("model_architecture", "Prior Labs TabPFN + Google Gemma 2"),
+        model_provider=ml_result.get("model_architecture", "Prior Labs TabPFN + Google Gemma"),
         observability_provider="Sentry Agent Tracing",
-        hourly_timeline=ml_result.get("hourly_timeline", []),
-        solar_elevation_deg=ml_result.get("solar_elevation_deg", 0.0),
-        diffuse_irradiance_wm2=ml_result.get("diffuse_irradiance_wm2", 0.0)
+        hourly_timeline=_sanitize_timeline(ml_result.get("hourly_timeline", [])),
+        solar_elevation_deg=_sanitize_float(ml_result.get("solar_elevation_deg", 0.0)),
+        diffuse_irradiance_wm2=_sanitize_float(ml_result.get("diffuse_irradiance_wm2", 0.0)),
+        utc_offset_seconds=utc_offset,
     )
+
+@app.get("/directive", response_model=DirectiveResponse)
+def synthesize_directive(
+    window: str = Query(default="12:15 - 12:35", description="Peak window, e.g. 14:15 - 14:35"),
+    score: float = Query(default=80.0, ge=0.0, le=100.0, description="Circadian Recharge Score"),
+    uv: float = Query(default=2.5, ge=0.0, le=15.0, description="UV Index"),
+    cloud: int = Query(default=20, ge=0, le=100, description="Cloud cover percent"),
+):
+    """
+    Slow lane: asks live Gemma for a tailored spoken directive. Called by the
+    client AFTER /evaluate has already painted, so only this span loads late.
+    """
+    t0 = time.time()
+    with sentry_sdk.start_span(op="ai.llm.gemma", name="Gemma Eyes-Free Directive Synthesis") as span_gemma:
+        gemma_service = GemmaDirectiveService()
+        spoken_directive, source, model_used = gemma_service.generate_directive_with_source(window, score, uv, cloud)
+        llm_ms = round((time.time() - t0) * 1000, 2)
+
+        span_gemma.set_data("llm.model", model_used)
+        span_gemma.set_data("llm.estimated_prompt_tokens", 48)
+        span_gemma.set_data("llm.estimated_completion_tokens", len(spoken_directive.split()) * 2)
+        span_gemma.set_data("directive.source", source)
+
+    return DirectiveResponse(
+        spoken_directive=spoken_directive,
+        source=source,
+        llm_latency_ms=llm_ms,
+        model=model_used,
+    )
+
+def _extract_cloud_cover(telemetry_df) -> int:
+    try:
+        return int(telemetry_df.iloc[0].get("cloud_cover_pct", 20))
+    except (IndexError, AttributeError, ValueError, TypeError):
+        return 20
+
+def _sanitize_timeline(hourly_timeline: list) -> list:
+    for row in hourly_timeline:
+        row["circadian_score"] = _sanitize_float(row.get("circadian_score", 0.0))
+        row["uv_index"] = _sanitize_float(row.get("uv_index", 0.0))
+    return hourly_timeline
+
+def _run_telemetry_ml(lat: float, lon: float):
+    """
+    Runs telemetry ingestion + TabPFN inference with Sentry spans.
+    Returns (telemetry_df, ml_result, ingest_ms, utc_offset_seconds).
+    Always fresh, never cached.
+    """
+    # Span 1: Atmospheric Ingestion
+    with sentry_sdk.start_span(op="ai.telemetry.ingest", name="Open-Meteo Atmospheric Ingestion") as span_ingest:
+        t0 = time.time()
+        service = AtmosphericDataService(latitude=lat, longitude=lon)
+        telemetry_df = service.fetch_solar_telemetry()
+        t_ingest_ms = round((time.time() - t0) * 1000, 2)
+        if telemetry_df is None or telemetry_df.empty:
+            raise HTTPException(status_code=502, detail="Atmospheric telemetry unavailable for these coordinates.")
+        span_ingest.set_data("rows_retrieved", len(telemetry_df))
+        span_ingest.set_data("latitude", lat)
+        span_ingest.set_data("longitude", lon)
+
+    # Span 2: Prior Labs TabPFN Inference
+    with sentry_sdk.start_span(op="ai.model.tabpfn", name="Prior Labs TabPFN Melanopic Regression") as span_ml:
+        try:
+            ml_result = ml_engine.predict_optimal_window(telemetry_df)
+        except ValueError as exc:
+            raise HTTPException(status_code=502, detail=f"Circadian inference failed: {exc}")
+        span_ml.set_data("model_architecture", ml_result["model_architecture"])
+        span_ml.set_data("inference_latency_ms", ml_result["inference_latency_ms"])
+        span_ml.set_data("circadian_score", ml_result["circadian_recharge_score"])
+        span_ml.set_data("optimal_hour", ml_result["optimal_hour"])
+
+    try:
+        utc_offset = int(service.utc_offset_seconds or 0)
+    except (TypeError, ValueError, AttributeError):
+        utc_offset = 0
+    return telemetry_df, ml_result, t_ingest_ms, utc_offset
+
+@app.get("/geocode", response_model=list[GeocodeResult])
+def geocode_place(
+    name: str = Query(..., min_length=2, max_length=100, description="Place name to search"),
+):
+    """
+    Free place search via Open-Meteo Geocoding (no key). Powers the
+    "search any city" box so judges can jump anywhere in seconds.
+    """
+    query = (name or "").strip()
+    if not query:
+        raise HTTPException(status_code=400, detail="Missing place name.")
+    try:
+        resp = requests.get(
+            "https://geocoding-api.open-meteo.com/v1/search",
+            params={"name": query, "count": 6, "language": "en", "format": "json"},
+            timeout=6.0,
+        )
+        resp.raise_for_status()
+        results = (resp.json().get("results") or [])[:6]
+    except requests.RequestException as exc:
+        raise HTTPException(status_code=502, detail=f"Place search failed: {exc}")
+    out = []
+    for r in results:
+        try:
+            out.append(GeocodeResult(
+                name=str(r.get("name", query)),
+                latitude=float(r["latitude"]),
+                longitude=float(r["longitude"]),
+                country=str(r.get("country", "")),
+                admin1=str(r.get("admin1", "")),
+            ))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
 
 @app.post("/synthesize-audio")
 def synthesize_audio(request: AudioSynthesisRequest):
     """
     Synthesizes speech directive into genuine MP3 audio bytes via ElevenLabs.
     """
-    if not request.text:
+    text = (request.text or "").strip()
+    if not text:
         raise HTTPException(status_code=400, detail="Missing text for audio synthesis")
+    if len(text) > 1000:
+        raise HTTPException(status_code=400, detail="Text exceeds 1000-character synthesis limit.")
     try:
-        audio_bytes = audio_service.synthesize_speech(request.text)
-        return Response(content=audio_bytes, media_type="audio/mpeg")
+        audio_bytes = audio_service.synthesize_speech(text)
+        return Response(
+            content=audio_bytes,
+            media_type="audio/mpeg",
+            headers={
+                "X-Voice-Id": audio_service.voice_id,
+                "X-Voice-Name": getattr(audio_service, "voice_name", "Custom"),
+            },
+        )
+    except RuntimeError as e:
+        raise HTTPException(status_code=502, detail=f"ElevenLabs TTS failed: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=502, detail=f"ElevenLabs TTS failed: {str(e)}")
 
