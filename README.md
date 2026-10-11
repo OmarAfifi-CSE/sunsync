@@ -91,7 +91,7 @@ Modern software engineering environments create an acute biological mismatch:
 * 🔬 **480nm ipRGC Melanopic Flux:** SunSync computes Equivalent Melanopic Lux (EML) directly from live atmospheric vectors, targeting intrinsically photosensitive retinal ganglion cells that synchronize the suprachiasmatic nucleus (SCN).
 * 🎙️ **The 15-Second Eyes-Free Protocol:** Generates a deterministic spoken brief via ElevenLabs Charlie voice; glance at the screen for under 60 seconds, pocket your device, and step into natural light.
 * ⏱️ **Precision 20-Minute Solar Windows:** Dynamically identifies the exact time window where sunlight flux is high enough for circadian resetting while keeping UV exposure strictly within safe dermal thresholds.
-* ⚡ **Zero-Shot TabPFN Edge Core:** Foundation tabular transformer running inference on live CPU across multi-dimensional atmospheric tables, backed by a sub-millisecond analytical fallback.
+* ⚡ **Zero-Shot TabPFN Edge Core:** Foundation tabular transformer running inference on live CPU across multi-dimensional atmospheric tables, backed by an instant on-device analytical fallback.
 
 </td>
 </tr>
@@ -103,7 +103,7 @@ Modern software engineering environments create an acute biological mismatch:
 | :--- | :--- | :--- |
 | **Morning Focus Anchor** | Step outside before your first standup, catch natural photons, and trigger the cortisol pulse that anchors sleep 14–16 hours later. | **Solar elevation angle**, direct & diffuse irradiance, and 15s Gemma spoken directive. |
 | **Afternoon Slump Detox** | Replace the 3 PM caffeine crash with a calculated 20-minute sunlight reset under safe UV conditions. | **Live UV index monitoring**, cloud attenuation factor, and countdown timer. |
-| **Eyes-Free Screen Break** | Pocket your device and let ElevenLabs Charlie narrate your photobiology parameters hands-free. | **`eleven_flash_v2_5` streaming**, audio caching, and eyes-free modal. |
+| **Eyes-Free Screen Break** | Pocket your device and let ElevenLabs Charlie narrate your photobiology parameters hands-free. | **`eleven_flash_v2_5` streaming** at gentle volume and eyes-free modal. |
 | **Zero-Hallucination Integrity** | Inspect the exact mathematical breakdown behind every score without fabricated wellness claims. | **Fact-checking regex guardrail** in `gemma_service.py` & Sentry agent spans. |
 
 ---
@@ -112,21 +112,21 @@ Modern software engineering environments create an acute biological mismatch:
 
 SunSync enforces four non-negotiable engineering invariants:
 
-### 1. Sub-300ms Fast-Path Decoupling (`src/main.py`)
-The primary `/evaluate` endpoint immediately returns deterministic solar metrics, UV safety, and TabPFN EML scoring without waiting for generative LLMs or audio synthesis. Generative pipelines (`/generate-directive`, `/generate-audio`) run on asynchronous background paths, ensuring zero UI latency.
+### 1. Fast-Lane Decoupling (`src/app.py`)
+The primary `/evaluate` endpoint immediately returns deterministic solar metrics, UV safety, and TabPFN scoring without waiting for generative LLMs or audio synthesis. The live Gemma directive (`/directive`) and voice synthesis (`/synthesize-audio`) run as a background slow lane that upgrades the quote in place — first paint in ~2.5 s, zero UI blocking.
 
-### 2. Zero-Hallucination Fact-Checking Guardrail (`src/services/gemma_service.py`)
-Google Gemma synthesizes natural speech directives under strict programmatic validation (`validate_directive_facts()`). Every numerical claim (exposure duration, UV index, lux values) is verified against deterministic ground truth. If any hallucination or drift is detected, the system instantaneously falls back to safe scientific copy.
+### 2. Zero-Hallucination Fact-Checking Guardrail (`src/gemma_service.py`)
+Google Gemma synthesizes natural speech directives under strict programmatic validation (`validate_directive()`). Every numerical claim (window time, UV index) is verified against deterministic ground truth. If any hallucination or drift is detected, the system instantaneously falls back to safe scientific copy.
 
-### 3. Zero-Screen Audio Protocol (`src/services/audio_service.py`)
+### 3. Zero-Screen Audio Protocol (`src/audio_service.py`)
 Speech is synthesized using ElevenLabs' official premade Charlie voice (`IKne3meq5aSn9XLyUdCD`) via ultra-low-latency `eleven_flash_v2_5`. The application is explicitly designed for eyes-free listening: under 60 seconds on the screen, 20 minutes under the sky.
 
-### 4. Defensive Tabular ML with Resilient Edge Fallback (`src/services/circadian_ml.py`)
+### 4. Defensive Tabular ML with Resilient Edge Fallback (`src/circadian_ml.py`)
 Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU without GPU dependencies or heavyweight weights. If memory or remote token limits are constrained, a resilient analytical photobiological regressor takes over with zero downtime.
 
 ---
 
-## 📱 Mobile-First Interface Showcase
+## 📱 Interface Tour (Live Mobile Screens — Zero Mockups)
 
 <table width="100%">
   <thead>
@@ -154,16 +154,16 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
     </tr>
     <tr valign="top">
       <td width="25%" align="center">
-        <sub><em>Editorial daylight typography &amp; zero-screen manifesto.</em></sub>
+        <sub><em>Glance card: today's window, live countdown, recharge score — the 10-second answer.</em></sub>
       </td>
       <td width="25%" align="center">
-        <sub><em>Dynamic solar window calculation (13:15–13:35) &amp; recharge score.</em></sub>
+        <sub><em>Decision card (<b>GO NOW / Wait / Done</b>) + UV safety bands + daylight curve to 6 PM.</em></sub>
       </td>
       <td width="25%" align="center">
-        <sub><em>Fact-verified Google Gemma directive with ElevenLabs audio playback.</em></sub>
+        <sub><em>Fact-verified Gemma directive with source badge (✦ Gemma live / ⚡ edge instant) + Charlie voice playback.</em></sub>
       </td>
       <td width="25%" align="center">
-        <sub><em>The outdoor commitment card: lock workstation &amp; step outside.</em></sub>
+        <sub><em>The outdoor commitment card: 20-minute breathing timer + auto-playing voice send-off, phone face-down.</em></sub>
       </td>
     </tr>
   </tbody>
@@ -172,15 +172,19 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 <br/>
 
 <details>
-<summary><b>📊 Detailed Photobiology Telemetry Cards — Click to Expand</b></summary>
+<summary><b>📊 Detailed Photobiology Telemetry Breakdown — Click to Expand</b></summary>
 <br/>
 
 <div align="center">
-  <img src="docs/screenshots/mobile-photobiology-metrics.jpg" width="220" height="484" alt="Detailed Photobiology Telemetry Cards" />
-  <p><i>Real-time breakdown of optimal solar window, Prior Labs recharge score (100/100), and safe ambient viewing UV levels (0.4).</i></p>
+  <img src="docs/screenshots/mobile-photobiology-metrics.jpg" width="220" alt="Detailed Photobiology Telemetry Cards" />
+  <p><i>Live measured breakdown: optimal solar window, Prior Labs recharge score (100/100), and ambient viewing UV safety index.</i></p>
 </div>
 
 </details>
+
+<br/>
+
+> *Every screen above is captured directly from the live [production service](https://sunsync-engine.onrender.com/) — raw unedited mobile captures, no synthetic mockups.*
 
 ---
 
@@ -190,8 +194,8 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 ┌────────────────────────────────────────────────────────────────────────────────────────┐
 │                                SUNSYNC SYSTEM TOPOLOGY                                 │
 │                                                                                        │
-│   [Free Open-Meteo Telemetry]          [Local Atmospheric Cache]                       │
-│   (Hourly UV, Irradiance, Cloud)       (Offline Fallback Matrix)                       │
+│   [Free Open-Meteo Telemetry]          [Offline Fallback Matrix]                       │
+│   (Hourly UV, Irradiance, Cloud)       (Synthetic dead-zone telemetry)                 │
 │                │                                   │                                   │
 │                └─────────────────┬─────────────────┘                                   │
 │                                  ▼                                                     │
@@ -231,31 +235,33 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 | **Eyes-Free Audio** | **ElevenLabs** | `eleven_flash_v2_5` | Real-time speech synthesis using premade Charlie voice (`IKne3meq5aSn9XLyUdCD`) so developers step outside without screens. |
 | **Telemetry & Spans** | **Sentry Agent Tracing** | SDK 2.x | Distributed transaction tracing across `ai.telemetry.ingest`, `ai.model.tabpfn`, and `ai.llm.gemma` spans. |
 | **PaaS Hosting** | **Render** | Declarative YAML | Automated container deployment (`render.yaml`) hosting production web service with zero-downtime healthcheck. |
-| **Backend Gateway** | **FastAPI** | `0.115.6` | Asynchronous high-throughput ASGI web framework powering OpenAPI docs and dual-lane endpoints. |
-| **Data Validation** | **Pydantic** | `2.10.4` | Strict type-safety and serialization contracts for photobiological data transfers. |
+| **Backend Gateway** | **FastAPI** | `0.141.1` (verified) | Asynchronous high-throughput ASGI web framework powering OpenAPI docs and dual-lane endpoints. |
+| **Data Validation** | **Pydantic** | `2.12.5` (verified) | Strict type-safety and serialization contracts for photobiological data transfers. |
 | **Atmospheric Source** | **Open-Meteo** | Free REST API | High-resolution hourly solar telemetry (DNI, DHI, UV, cloud cover, elevation). |
 
 ---
 
-## 🔬 Concrete Example Explorations
+## 🔬 Concrete Measured Explorations (Live Outputs, 2026-10-11)
 
-### Scenario A: Sunny Morning Standup (Cairo, Egypt)
-- **Input Coordinates:** `30.04° N, 31.24° E` (Morning 08:30 AM, Solar Elevation: 28°)
-- **TabPFN Output:** Predicted Melanopic EML: `14,200 lux` | Circadian Recharge Score: `92/100` | UV Index: `2.1`
-- **Gemma Spoken Brief:** *"Good morning! Your optimal solar window is now. Step outside for 15 minutes to lock in your circadian rhythm before screen work."*
-- **Verification:** UV index is well within safe dermal exposure (<3.0); retinal ganglion cells reach full saturation.
+> Every row below is a real measured API response — window, score, UV and directive as returned, unedited (punctuation excepted).
 
-### Scenario B: Overcast Winter Afternoon (London, UK)
-- **Input Coordinates:** `51.51° N, -0.13° W` (Afternoon 13:00 PM, 90% Cloud Cover)
-- **TabPFN Output:** Predicted Melanopic EML: `3,850 lux` | Circadian Recharge Score: `68/100` | UV Index: `0.9`
-- **Gemma Spoken Brief:** *"Diffuse sky detected. Even through cloud cover, natural outdoor lux is 8x brighter than your indoor office. Take a 20-minute walk."*
-- **Verification:** Cloud attenuation factor applied; diffuse irradiance provides sufficient cyan waveband without direct glare.
+### Scenario A: Cairo Evening — Peak Already Passed (Past State)
+- **Input Coordinates:** `30.04° N, 31.24° E` — evening, computed window `14:15 - 14:35`
+- **TabPFN Output:** Circadian Recharge Score: `100/100` | UV Index: `5.35` | State: `past`
+- **Gemma Spoken Brief (`openrouter/google/gemma-3-27b-it`):** *"Quick one: Just noting your daylight break peak — it was 14:15 - 14:35 with a UV of 5.35 — missed it, but let's aim for softer morning light tomorrow!"*
+- **Verification:** validator confirmed verbatim window + UV; UI verdict card read `Done today` — all three layers agreed.
 
-### Scenario C: High-UV Summer Midday (Phoenix, USA)
-- **Input Coordinates:** `33.45° N, -112.07° W` (Solar Noon 12:45 PM, UV Index: `9.4`)
-- **TabPFN Output:** Predicted Melanopic EML: `48,000 lux` | Circadian Recharge Score: `45/100` | UV Alert: `Extreme`
-- **Gemma Spoken Brief:** *"Direct sunlight exceeds safe UV thresholds. Seek indirect shaded daylight or wait for the recommended 16:30 window."*
-- **Verification:** Programmatic safety guardrail caps exposure time and enforces shade viewing protocols.
+### Scenario B: New York Late Morning — Window Ahead (Upcoming State)
+- **Input Coordinates:** `40.71° N, -74.01° W` — computed window `14:15 - 14:35`
+- **TabPFN Output:** Circadian Recharge Score: `100/100` | UV Index: `0.95` | State: `upcoming`
+- **Gemma Spoken Brief (`openrouter/google/gemma-3-27b-it`):** *"Hey you: Your daylight break with a UV index of 0.95 opens later today between 14:15 - 14:35, so be ready to step outside then!"*
+- **Verification:** tense check — "opens later today", never "right now" for a future window.
+
+### Scenario C: Tokyo Around Midnight — Midday Peak Ahead (Upcoming State)
+- **Input Coordinates:** `35.68° N, 139.65° E` — computed window `12:15 - 12:35`
+- **TabPFN Output:** Circadian Recharge Score: `100/100` | UV Index: `5.2` | State: `upcoming`
+- **Gemma Spoken Brief (`openrouter/google/gemma-3-27b-it`):** *"Fresh air alert: Your daylight break with a UV value of 5.2 opens between 12:15 - 12:35 today, so prepare to step outside then!"*
+- **Verification:** header clock correctly showed Tokyo-local time (UTC+9) while the viewer sat in UTC+3 — place-clock proof.
 
 ---
 

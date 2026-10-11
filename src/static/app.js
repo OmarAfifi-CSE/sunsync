@@ -519,7 +519,7 @@
     if (document.body.classList.contains('is-loading')) {
       document.body.classList.remove('is-loading');
       ['btn-play-audio', 'btn-play-audio-hero', 'btn-start-detox',
-       'btn-start-detox-hero', 'btn-start-detox-main'].forEach((id) => {
+       'btn-start-detox-hero', 'btn-start-detox-main', 'btn-copy-directive'].forEach((id) => {
         const b = document.getElementById(id);
         if (b) b.disabled = false;
       });
@@ -607,7 +607,13 @@
       if (uvScaleMarker) uvScaleMarker.style.backgroundColor = barColor;
     }
 
-    if (txtWindowHint) txtWindowHint.textContent = score >= 50 ? 'Step out now — light is worth it' : 'Soft morning/evening light still counts';
+    if (txtWindowHint) {
+      const wState = data.window_state || 'live';
+      txtWindowHint.textContent = wState === 'past'
+        ? 'That peak has passed — see morning light'
+        : score >= 50 ? 'Step out now — light is worth it'
+        : 'Soft morning/evening light still counts';
+    }
 
     if (directiveQuote) directiveQuote.textContent = `"${data.spoken_directive}"`;
 
@@ -638,11 +644,14 @@
     if (glanceScore) glanceScore.textContent = score;
     if (glanceUv) glanceUv.textContent = uv;
     if (glanceSub) {
-      glanceSub.textContent = uv >= 6
-        ? 'Strong sun · seek open shade, never stare'
-        : score >= 80
-          ? 'Peak melanopic light · step out, look far'
-          : 'Soft daylight · still worth 20 minutes';
+      const wState = data.window_state || 'live';
+      glanceSub.textContent = wState === 'past'
+        ? 'Peak has passed · soft morning light tomorrow'
+        : uv >= 6
+          ? 'Strong sun · seek open shade, never stare'
+          : score >= 80
+            ? 'Peak melanopic light · step out, look far'
+            : 'Soft daylight · still worth 20 minutes';
     }
     updateCountdown();
 
@@ -797,13 +806,13 @@
     ctx.fillText(`${timeline[maxIdx].hour}:00 peak`, Math.min(Math.max(peakX, 70), w - 70), Math.max(peakY - 20, 14));
   }
 
-  // ---------- Chart tooltip ----------
+  // ---------- Chart tooltip (mouse + touch) ----------
   function setupChartInteraction() {
     if (!chartCanvas || !chartTooltip) return;
-    chartCanvas.addEventListener('mousemove', (e) => {
+    const showAt = (clientX, clientY) => {
       if (!currentTimelineData || currentTimelineData.length === 0) return;
       const rect = chartCanvas.getBoundingClientRect();
-      const mouseX = e.clientX - rect.left;
+      const mouseX = clientX - rect.left;
       const padding = { left: 40, right: 24 };
       const chartW = rect.width - padding.left - padding.right;
       const n = currentTimelineData.length;
@@ -812,12 +821,23 @@
       if (idx >= 0 && idx < n) {
         const item = currentTimelineData[idx];
         chartTooltip.style.display = 'block';
-        chartTooltip.style.left = `${Math.min(e.clientX - rect.left + 14, rect.width - 150)}px`;
-        chartTooltip.style.top = `${Math.max(e.clientY - rect.top - 38, 4)}px`;
+        chartTooltip.style.left = `${Math.min(clientX - rect.left + 14, rect.width - 150)}px`;
+        chartTooltip.style.top = `${Math.max(clientY - rect.top - 38, 4)}px`;
         chartTooltip.innerHTML = `<strong>${item.hour}:00</strong> · ☀ ${item.circadian_score} · UV ${item.uv_index}`;
       }
-    });
+    };
+    chartCanvas.addEventListener('mousemove', (e) => showAt(e.clientX, e.clientY));
     chartCanvas.addEventListener('mouseleave', () => { chartTooltip.style.display = 'none'; });
+    // Touch: drag across the curve to inspect hours (no hover on mobile).
+    chartCanvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length > 0) showAt(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    chartCanvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length > 0) showAt(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: true });
+    chartCanvas.addEventListener('touchend', () => {
+      setTimeout(() => { chartTooltip.style.display = 'none'; }, 1200);
+    });
   }
 
   // ---------- Audio ----------

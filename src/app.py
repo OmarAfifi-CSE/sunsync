@@ -67,7 +67,6 @@ app = FastAPI(
     lifespan=_lifespan,
 )
 
-data_service = AtmosphericDataService()
 ml_engine = CircadianMLEngine()
 audio_service = AudioDirectiveService()
 

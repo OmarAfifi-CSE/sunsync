@@ -409,6 +409,7 @@ body.is-loading .directive-text {
   cursor: pointer; transition: all 0.2s ease;
 }
 .btn-ghost:hover { border-color: var(--ink); color: var(--ink); }
+.btn-ghost:disabled { opacity: 0.5; cursor: wait; }
 .directive-text {
   font-family: var(--font-serif); font-size: clamp(1.15rem, 1.1rem + 0.6vw, 1.42rem);
   font-weight: 500; color: var(--ink); line-height: 1.62;
