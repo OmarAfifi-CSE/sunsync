@@ -56,6 +56,7 @@
   // New glance-layer elements (progressive enhancement — all optional)
   const liveClock = document.getElementById('live-clock');
   const liveDate = document.getElementById('live-date');
+  const liveCity = document.getElementById('live-city');
   const glanceWindow = document.getElementById('glance-window');
   const glanceCountdown = document.getElementById('glance-countdown');
   const glanceSub = document.getElementById('glance-sub');
@@ -138,6 +139,7 @@
       // A pending city switch owns the header until its data lands.
       if (liveClock.classList.contains('loading')) {
         if (liveDate) liveDate.textContent = `syncing ${placeLabel}…`;
+        if (liveCity) liveCity.textContent = placeLabel;
         updateCountdown();
         return;
       }
@@ -158,6 +160,7 @@
       }
       liveClock.textContent = `${hh}:${mm}`;
       if (liveDate) liveDate.textContent = `${dateStr} · ${placeLabel}`;
+      if (liveCity) liveCity.textContent = placeLabel;
       updateCountdown();
     };
     tick();

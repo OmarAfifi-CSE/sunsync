@@ -191,37 +191,34 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 ## ⚡ ASCII Architecture & Dataflow Pipeline
 
 ```text
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                                SUNSYNC SYSTEM TOPOLOGY                                 │
-│                                                                                        │
-│   [Free Open-Meteo Telemetry]          [Offline Fallback Matrix]                       │
-│   (Hourly UV, Irradiance, Cloud)       (Synthetic dead-zone telemetry)                 │
-│                │                                   │                                   │
-│                └─────────────────┬─────────────────┘                                   │
-│                                  ▼                                                     │
-│                  ┌───────────────────────────────┐                                     │
-│                  │  Data Transformation Pipeline │                                     │
-│                  │  (Feature Vector Assembly)    │                                     │
-│                  └───────────────┬───────────────┘                                     │
-│                                  │                                                     │
-│                                  ▼                                                     │
-│                  ┌───────────────────────────────┐     [Sentry Agent Tracing]          │
-│                  │  Prior Labs TabPFN ML Core    │ ◄── (Monitors Inference Spans,      │
-│                  │  (Zero-Shot Melanopic EML)    │     Latency & Pipeline Telemetry)   │
-│                  └───────────────┬───────────────┘                                     │
-│                                  │                                                     │
-│                                  ▼                                                     │
-│                  ┌───────────────────────────────┐                                     │
-│                  │  Google Gemma Local Core      │ ◄── [Factual Validation Guardrail]  │
-│                  │  (15-Second Action Directive) │     (Zero-Hallucination Regex)      │
-│                  └───────────────┬───────────────┘                                     │
-│                                  │                                                     │
-│                                  ▼                                                     │
-│                  ┌───────────────────────────────┐     [Render Cloud Platform]         │
-│                  │  ElevenLabs Audio Synthesizer │ ──► (Public Web Application &       │
-│                  │  (Screen-Free Spoken Brief)   │     FastAPI REST Gateway)           │
-│                  └───────────────────────────────┘                                     │
-└────────────────────────────────────────────────────────────────────────────────────────┘
+                ┌─────────────────────────────┐
+                │  Live Open-Meteo Telemetry  │
+                │(Hourly UV, Solar Irradiance)│
+                └──────────────┬──────────────┘
+                               │
+                               ▼
+                ┌─────────────────────────────┐
+                │   Feature Vector Assembly   │
+                │  (12-Hour Daylight Context) │
+                └──────────────┬──────────────┘
+                               │
+                               ▼
+[Sentry Spans]  ┌─────────────────────────────┐
+(Distributed) ─►│  Prior Labs TabPFN ML Core  │
+(Latency Trace) │ (Zero-Shot Bayesian CPU ML) │
+                └──────────────┬──────────────┘
+                               │
+                               ▼
+                ┌─────────────────────────────┐ ◄── [Grounding Layer]
+                │ Google Gemma Directive Core │     (Factual Verify:
+                │ (Natural Spoken Directive)  │      Window & UV)
+                └──────────────┬──────────────┘
+                               │
+                               ▼
+[Render Cloud]  ┌─────────────────────────────┐
+(FastAPI Host) ─►│ ElevenLabs Audio Synthesis │
+(Public Host)   │ (Lifelike Charlie Briefing) │
+                └─────────────────────────────┘
 ```
 
 ---

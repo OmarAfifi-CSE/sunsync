@@ -51,5 +51,18 @@ class TestCircadianMLEngine(unittest.TestCase):
         result = self.engine.predict_optimal_window(telemetry_df)
         self.assertEqual(len(result["hourly_timeline"]), 12)
 
+    def test_forced_analytical_mode(self):
+        """Verify SUNSYNC_ML_MODE=analytical serves the deterministic engine."""
+        os.environ["SUNSYNC_ML_MODE"] = "analytical"
+        try:
+            engine = CircadianMLEngine(use_cpu=True)
+            offline_df = self.data_service._generate_offline_telemetry()
+            result = engine.predict_optimal_window(offline_df)
+            self.assertIn("Analytical", result["model_architecture"])
+            self.assertGreaterEqual(result["circadian_recharge_score"], 0.0)
+            self.assertLessEqual(result["circadian_recharge_score"], 100.0)
+        finally:
+            del os.environ["SUNSYNC_ML_MODE"]
+
 if __name__ == "__main__":
     unittest.main()

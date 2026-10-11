@@ -130,9 +130,10 @@ body.is-loading .directive-text {
 .brand-link:hover { transform: translateY(-1px); }
 .brand-logo-img { height: 40px; width: auto; display: block; }
 .header-center { display: flex; align-items: baseline; gap: 10px; }
-.live-clock { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; }
+.live-clock { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.02em; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
 .live-clock.loading { opacity: 0.35; animation: ethos-blink 1s infinite ease-in-out; }
-.live-date { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
+.live-date { font-size: 0.78rem; color: var(--muted); font-weight: 500; white-space: nowrap; }
+.live-city { display: none; }
 .system-status-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .github-badge {
   display: inline-flex; align-items: center; gap: 6px;
@@ -196,7 +197,7 @@ body.is-loading .directive-text {
 .proof-item strong { font-size: 1.25rem; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
 .proof-item span { font-size: 0.74rem; color: var(--muted); font-weight: 500; }
 .proof-divider { width: 1px; height: 34px; background: var(--line); }
-.hero-sponsors { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+  .hero-sponsors { font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
 
 /* ---------- Glance card ---------- */
 .glance-card {
@@ -218,7 +219,7 @@ body.is-loading .directive-text {
 .glance-top { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 1; }
 .glance-label { display: inline-flex; align-items: center; gap: 8px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #FDE68A; }
 .glance-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ADE80; box-shadow: 0 0 12px #4ADE80; animation: ethos-blink 2s infinite; }
-.glance-countdown { font-size: 0.74rem; font-weight: 600; color: #FED7AA; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16); padding: 4px 12px; border-radius: var(--r-pill); }
+.glance-countdown { font-size: 0.74rem; font-weight: 600; color: #FED7AA; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.16); padding: 4px 12px; border-radius: var(--r-pill); white-space: nowrap; flex-shrink: 0; }
 .glance-time { font-size: clamp(2.4rem, 4.5vw, 3.2rem); font-weight: 700; letter-spacing: -0.03em; color: #fff; position: relative; z-index: 1; font-variant-numeric: tabular-nums; line-height: 1.1; }
 .glance-sub { font-size: 0.88rem; color: #FDBA74; position: relative; z-index: 1; }
 .glance-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; position: relative; z-index: 1; margin-top: 6px; }
@@ -580,7 +581,19 @@ body.is-loading .directive-text {
 @media (max-width: 640px) {
   .app-layout { padding: 28px 16px 48px; gap: 22px; }
   .header-inner { padding: 10px 16px; }
-  .header-center { display: none; }
+  /* Single-line mobile header: compact logo, clock + short city, icon GitHub. */
+  .header-inner { padding: 10px 16px; flex-wrap: nowrap; gap: 10px; }
+  .brand-logo-img { height: 28px; }
+  .header-center { display: flex; min-width: 0; flex: 1 1 auto; justify-content: center; }
+  .live-clock { font-size: 1.02rem; }
+  .live-date { display: none; }
+  .live-city {
+    display: inline; font-size: 0.72rem; font-weight: 600; color: var(--muted);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;
+  }
+  .github-badge span:last-child { display: none; }
+  .github-badge { padding: 6px 10px; flex-shrink: 0; }
+  .brand-link { flex-shrink: 0; }
   .card { padding: 22px 18px; }
   .coords-form { grid-template-columns: 1fr; }
   .metrics-grid { grid-template-columns: 1fr; }
@@ -588,6 +601,7 @@ body.is-loading .directive-text {
   .hero-headline { font-size: 2.3rem; }
   .hero-ctas .btn-primary, .hero-ctas .btn-secondary { flex: 1 1 100%; justify-content: center; }
   .hero-proof { gap: 12px; }
+  .hero-sponsors { font-size: 0.62rem; letter-spacing: 0.05em; line-height: 1.7; }
   .proof-divider { display: none; }
   .glance-card { padding: 24px 20px; border-radius: 22px; }
   .glance-actions { grid-template-columns: 1fr; }

@@ -6,9 +6,16 @@ atmospheric feature matrices, predicting the optimal Melanopic Solar Window
 and Circadian Recharge Score (CRS) with live on-device CPU inference.
 """
 
+import os
 import time
 import numpy as np
 import pandas as pd
+
+# SUNSYNC_ML_MODE=analytical → skip TabPFN entirely (tiny-instance survival).
+# Default "auto" always tries the real model first. This flag exists so one
+# dashboard edit (no rebuild) can guarantee life even if weights never fit RAM.
+def _forced_analytical() -> bool:
+    return os.getenv("SUNSYNC_ML_MODE", "auto").strip().lower() == "analytical"
 
 class CircadianMLEngine:
     def __init__(self, use_cpu: bool = True):
@@ -18,8 +25,23 @@ class CircadianMLEngine:
     def _init_model(self):
         """
         Lazily initializes the TabPFN Regressor to minimize memory footprint.
+        Caps torch thread pools FIRST: on a 512MB instance the default
+        per-CPU thread arenas spike RSS at first compute and get the worker
+        OOM-killed mid-fit. Single-threaded fit on 12 rows is still instant.
         """
         if self._regressor is None:
+            if _forced_analytical():
+                self._regressor = "FALLBACK"
+                return
+            try:
+                import torch
+                try:
+                    torch.set_num_threads(1)
+                    torch.set_num_interop_threads(1)
+                except Exception:
+                    pass
+            except Exception:
+                pass
             try:
                 from tabpfn import TabPFNRegressor
                 self._regressor = TabPFNRegressor(device=self.device)
