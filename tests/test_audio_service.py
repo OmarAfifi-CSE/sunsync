@@ -5,8 +5,10 @@ test_audio_service.py - Unit Tests for AudioDirectiveService
 import sys
 import os
 import unittest
+from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
+load_dotenv(os.path.abspath(os.path.join(os.path.dirname(__file__), "../.env")))
 
 from audio_service import AudioDirectiveService
 
@@ -14,21 +16,27 @@ class TestAudioDirectiveService(unittest.TestCase):
     def setUp(self):
         self.service = AudioDirectiveService()
 
-    def test_acoustic_chime_generation(self):
-        """Verify that offline acoustic chime generates a valid WAV header and non-empty byte buffer."""
-        audio_bytes = self.service._generate_acoustic_chime()
-        self.assertIsInstance(audio_bytes, bytes)
-        self.assertGreater(len(audio_bytes), 44) # WAV header is at least 44 bytes
+    def test_voice_configuration(self):
+        """Verify default voice is configured to Charlie premade voice."""
+        self.assertEqual(self.service.voice_id, "IKne3meq5aSn9XLyUdCD")
+        self.assertIn("elevenlabs.io", self.service.base_url)
 
-        # Check RIFF and WAVE magic bytes
-        self.assertEqual(audio_bytes[:4], b"RIFF")
-        self.assertEqual(audio_bytes[8:12], b"WAVE")
-
-    def test_synthesize_speech_fallback(self):
-        """Verify that synthesize_speech succeeds even with no API key via fallback."""
-        audio_bytes = self.service.synthesize_speech("Test spoken directive.")
+    def test_synthesize_speech_live(self):
+        """Verify live synthesis generates valid MP3 audio bytes."""
+        if not self.service.api_key:
+            self.skipTest("ELEVENLABS_API_KEY not configured")
+        audio_bytes = self.service.synthesize_speech("Your circadian recharge window is now active.")
         self.assertIsInstance(audio_bytes, bytes)
-        self.assertGreater(len(audio_bytes), 0)
+        self.assertGreater(len(audio_bytes), 1000)
+        # Check MP3 magic header (ID3 or sync frame)
+        is_mp3 = audio_bytes.startswith(b"ID3") or b"\xff\xfb" in audio_bytes[:10]
+        self.assertTrue(is_mp3)
+
+    def test_missing_api_key_raises_error(self):
+        """Verify missing API key raises RuntimeError without fake chime."""
+        service_no_key = AudioDirectiveService(api_key="")
+        with self.assertRaises(RuntimeError):
+            service_no_key.synthesize_speech("Test speech.")
 
 if __name__ == "__main__":
     unittest.main()

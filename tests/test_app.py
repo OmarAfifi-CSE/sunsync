@@ -35,7 +35,42 @@ class TestSunSyncApp(unittest.TestCase):
         self.assertIn("telemetry_latency_ms", data)
         self.assertIn("ml_latency_ms", data)
         self.assertIn("total_pipeline_ms", data)
+        self.assertIn("cloud_cover_pct", data)
         self.assertEqual(data["observability_provider"], "Sentry Agent Tracing")
+
+    def test_evaluate_rejects_bad_coordinates(self):
+        """Verify that out-of-range coordinates are rejected with 422."""
+        response = self.client.get("/evaluate?lat=999&lon=0")
+        self.assertEqual(response.status_code, 422)
+
+    def test_directive_endpoint(self):
+        """Verify that /directive returns a spoken directive with source attribution."""
+        response = self.client.get("/directive?window=14:15%20-%2014:35&score=88&uv=2.8&cloud=15")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("spoken_directive", data)
+        self.assertTrue(len(data["spoken_directive"]) > 20)
+        self.assertIn(data["source"], ("gemma", "edge"))
+        self.assertIn("llm_latency_ms", data)
+        self.assertIn("model", data)
+
+    def test_geocode_endpoint(self):
+        """Verify that /geocode resolves a city name to coordinates."""
+        response = self.client.get("/geocode?name=Cairo")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        self.assertGreater(len(data), 0)
+        first = data[0]
+        self.assertIn("latitude", first)
+        self.assertIn("longitude", first)
+        self.assertGreaterEqual(first["latitude"], -90)
+        self.assertLessEqual(first["latitude"], 90)
+
+    def test_geocode_rejects_short_query(self):
+        """Verify that too-short place queries are rejected with 422."""
+        response = self.client.get("/geocode?name=X")
+        self.assertEqual(response.status_code, 422)
 
 if __name__ == "__main__":
     unittest.main()
