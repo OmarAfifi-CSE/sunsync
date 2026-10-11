@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://sunsync-engine.onrender.com/" target="_blank">
+<a href="https://sunsync-766905975866.europe-west1.run.app/" target="_blank">
   <img src="src/static/favicon.svg" width="110" height="110" alt="SunSync Emblem" style="border-radius: 26px; box-shadow: 0 10px 30px rgba(234, 88, 12, 0.25);" />
 </a>
 
@@ -17,7 +17,7 @@
   <img src="https://img.shields.io/badge/ML_Engine-Prior_Labs_TabPFN-2563EB?style=flat-square" alt="Prior Labs TabPFN" />
   <img src="https://img.shields.io/badge/LLM-Google_Gemma-4285F4?style=flat-square&logo=google&logoColor=white" alt="Google Gemma" />
   <img src="https://img.shields.io/badge/Audio-ElevenLabs-000000?style=flat-square" alt="ElevenLabs" />
-  <img src="https://img.shields.io/badge/Deployment-Render-46E3B7?style=flat-square&logo=render&logoColor=white" alt="Render" />
+  <img src="https://img.shields.io/badge/Deployment-Google_Cloud_Run-4285F4?style=flat-square&logo=googlecloud&logoColor=white" alt="Google Cloud Run" />
 </p>
 
 <p align="center">
@@ -31,15 +31,15 @@
 
 <p align="center">
   <!-- Tier 3: Primary Action Badges -->
-  <a href="https://sunsync-engine.onrender.com/" target="_blank">
-    <img src="https://img.shields.io/badge/🌐_Live_App-sunsync--engine.onrender.com-EA580C?style=for-the-badge&labelColor=0A0A1A" alt="Live App" />
+  <a href="https://sunsync-766905975866.europe-west1.run.app/" target="_blank">
+    <img src="https://img.shields.io/badge/🌐_Live_App-Google_Cloud_Run-EA580C?style=for-the-badge&labelColor=0A0A1A" alt="Live App" />
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" target="_blank">
     <img src="https://img.shields.io/badge/📖_Architecture_Deep_Dive-Read_on_DEV.to-0A0A1A?style=for-the-badge&labelColor=0A0A1A&logo=devdotto" alt="Architecture Deep Dive on DEV.to" />
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://sunsync-engine.onrender.com/docs" target="_blank">
+  <a href="https://sunsync-766905975866.europe-west1.run.app/docs" target="_blank">
     <img src="https://img.shields.io/badge/📡_OpenAPI_Docs-Inspect_API-059669?style=for-the-badge&labelColor=0A0A1A" alt="OpenAPI Docs" />
   </a>
 </p>
@@ -184,7 +184,7 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 
 <br/>
 
-> *Every screen above is captured directly from the live [production service](https://sunsync-engine.onrender.com/) — raw unedited mobile captures, no synthetic mockups.*
+> *Every screen above is captured directly from the live [production service](https://sunsync-766905975866.europe-west1.run.app/) — raw unedited mobile captures, no synthetic mockups.*
 
 ---
 
@@ -215,8 +215,8 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
                 └──────────────┬──────────────┘
                                │
                                ▼
-[Render Cloud]  ┌─────────────────────────────┐
-(FastAPI Host) ─►│ ElevenLabs Audio Synthesis │
+[Google Cloud]  ┌─────────────────────────────┐
+(Cloud Run)   ─►│ ElevenLabs Audio Synthesis │
 (Public Host)   │ (Lifelike Charlie Briefing) │
                 └─────────────────────────────┘
 ```
@@ -231,7 +231,7 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 | **Cognitive Directive** | **Google Gemma** | `gemma-4-26b-a4b-it` | Lightweight open-weight AI model synthesizing tabular ML outputs into a 15-second human directive via Google AI Studio. |
 | **Eyes-Free Audio** | **ElevenLabs** | `eleven_flash_v2_5` | Real-time speech synthesis using premade Charlie voice (`IKne3meq5aSn9XLyUdCD`) so developers step outside without screens. |
 | **Telemetry & Spans** | **Sentry Agent Tracing** | SDK 2.x | Distributed transaction tracing across `ai.telemetry.ingest`, `ai.model.tabpfn`, and `ai.llm.gemma` spans. |
-| **PaaS Hosting** | **Render** | Declarative YAML | Automated container deployment (`render.yaml`) hosting production web service with zero-downtime healthcheck. |
+| **Cloud Hosting** | **Google Cloud Run** | Docker Container | Fully managed serverless container deployment with 2GB RAM and zero-downtime automatic scaling. |
 | **Backend Gateway** | **FastAPI** | `0.143.0` (prod build) | Asynchronous high-throughput ASGI web framework powering OpenAPI docs and dual-lane endpoints. |
 | **Data Validation** | **Pydantic** | `2.14.0` (prod build) | Strict type-safety and serialization contracts for photobiological data transfers. |
 | **Atmospheric Source** | **Open-Meteo** | Free REST API | High-resolution hourly solar telemetry (DNI, DHI, UV, cloud cover, elevation). |

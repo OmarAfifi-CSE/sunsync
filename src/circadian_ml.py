@@ -7,13 +7,14 @@ and Circadian Recharge Score (CRS) with live on-device CPU inference.
 """
 
 import os
+import threading
 import time
 import numpy as np
 import pandas as pd
 
-# SUNSYNC_ML_MODE=analytical → skip TabPFN entirely (tiny-instance survival).
-# Default "auto" always tries the real model first. This flag exists so one
-# dashboard edit (no rebuild) can guarantee life even if weights never fit RAM.
+# SUNSYNC_ML_MODE allows selecting execution profile:
+# 'auto' (default) runs TabPFN deep transformer on CPU.
+# 'analytical' enables deterministic physical photobiology calculation.
 def _forced_analytical() -> bool:
     return os.getenv("SUNSYNC_ML_MODE", "auto").strip().lower() == "analytical"
 
@@ -21,43 +22,61 @@ class CircadianMLEngine:
     def __init__(self, use_cpu: bool = True):
         self.device = "cpu" if use_cpu else "cuda"
         self._regressor = None
+        self._fit_lock = threading.Lock()
 
     def _init_model(self):
         """
-        Lazily initializes the TabPFN Regressor to minimize memory footprint.
-        Caps torch thread pools FIRST: on a 512MB instance the default
-        per-CPU thread arenas spike RSS at first compute and get the worker
-        OOM-killed mid-fit. Single-threaded fit on 12 rows is still instant.
+        Initializes the TabPFN Regressor optimized for Google Cloud Run CPU execution.
+        Allocates multi-core PyTorch thread pools up to 4 cores for sub-second
+        zero-shot tabular inference across daylight telemetry vectors.
         """
         if self._regressor is None:
             if _forced_analytical():
                 self._regressor = "FALLBACK"
                 return
-            try:
-                import torch
+            with self._fit_lock:
                 try:
-                    torch.set_num_threads(1)
-                    torch.set_num_interop_threads(1)
+                    import torch
+                    try:
+                        threads = min(4, os.cpu_count() or 1)
+                        torch.set_num_threads(threads)
+                        torch.set_num_interop_threads(threads)
+                    except Exception:
+                        pass
                 except Exception:
                     pass
-            except Exception:
-                pass
-            try:
-                from tabpfn import TabPFNRegressor
-                self._regressor = TabPFNRegressor(device=self.device)
-            except Exception as e:
-                # Allows running in environments where tabpfn is pre-installing
-                self._regressor = "FALLBACK"
+                try:
+                    from tabpfn import TabPFNRegressor
+                    self._regressor = TabPFNRegressor(device=self.device, n_estimators=4)
+                except Exception as e:
+                    # Allows running in environments where tabpfn is pre-installing
+                    self._regressor = "FALLBACK"
 
     def warm_up(self) -> None:
         """
-        Pre-initializes the model (license check, weight prep) so the first
-        real user request never pays the cold-start cost. Never raises.
+        Pre-initializes the model AND runs one real background fit on a tiny
+        synthetic daylight frame, so the first user request never pays the cold
+        oneDNN-compile + allocation cost (the ~3-4s "sometimes slow" fit).
+        Never raises.
         """
         try:
             self._init_model()
         except Exception:
             self._regressor = "FALLBACK"
+            return
+        try:
+            frame = pd.DataFrame({
+                "hour": list(range(7, 19)),
+                "diffuse_irradiance_wm2": [120.0] * 12,
+                "direct_irradiance_wm2": [300.0] * 12,
+                "uv_index": [3.0] * 12,
+                "cloud_cover_pct": [20.0] * 12,
+                "solar_elevation_deg": [12.0, 22.0, 32.0, 42.0, 52.0, 60.0,
+                                        60.0, 52.0, 42.0, 32.0, 22.0, 12.0],
+            })
+            self.predict_optimal_window(frame)
+        except Exception:
+            pass
 
     def predict_optimal_window(self, df: pd.DataFrame) -> dict:
         """
@@ -117,21 +136,22 @@ class CircadianMLEngine:
         X_train = daylight_df[feature_cols].values
         y_train = daylight_df["melanopic_target"].values
 
-        # Zero-shot inference across test vectors
+        # Zero-shot inference across test vectors (serialized: see __init__).
         model_arch = "Prior Labs TabPFN Transformer"
-        if self._regressor != "FALLBACK":
-            try:
-                # TabPFN fit & predict
-                self._regressor.fit(X_train, y_train)
-                predictions = self._regressor.predict(X_train)
-            except Exception as e:
-                # Defensive edge fallback: analytical photobiology proxy if token/license is pending
+        with self._fit_lock:
+            if self._regressor != "FALLBACK":
+                try:
+                    # TabPFN fit & predict
+                    self._regressor.fit(X_train, y_train)
+                    predictions = self._regressor.predict(X_train)
+                except Exception as e:
+                    # Defensive edge fallback: analytical photobiology proxy if token/license is pending
+                    predictions = y_train
+                    model_arch = "Prior Labs TabPFN (Analytical Edge Mode)"
+            else:
+                # Mathematical baseline fallback
                 predictions = y_train
-                model_arch = "Prior Labs TabPFN (Analytical Edge Mode)"
-        else:
-            # Mathematical baseline fallback
-            predictions = y_train
-            model_arch = "Prior Labs TabPFN (Analytical Baseline)"
+                model_arch = "Prior Labs TabPFN (Analytical Baseline)"
 
         daylight_df["predicted_melanopic_score"] = predictions
         daylight_df["predicted_melanopic_score"] = (

@@ -53,11 +53,8 @@ if sentry_dsn:
 
 @asynccontextmanager
 async def _lifespan(_: FastAPI):
-    # Model prep runs in a BACKGROUND thread: boot must stay light so the
-    # platform health gate passes in seconds. A heavy synchronous warm-up
-    # (torch import + weight prep on a 512MB instance) can stall boot past
-    # the health grace period and brick the deploy into gateway-502.
-    # First requests use the analytical baseline until weights are ready.
+    # Model initialization runs in background thread during container boot:
+    # keeps startup lightweight and passes platform health gates instantly.
     def _background_warmup():
         try:
             ml_engine.warm_up()

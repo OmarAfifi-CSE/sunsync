@@ -193,7 +193,7 @@ class GemmaDirectiveService:
                 headers={
                     "Content-Type": "application/json",
                     "Authorization": f"Bearer {self.openrouter_api_key}",
-                    "HTTP-Referer": "https://sunsync-engine.onrender.com",
+                    "HTTP-Referer": "https://sunsync-766905975866.europe-west1.run.app",
                     "X-Title": "SunSync Circadian Brief",
                 },
                 timeout=self.timeout_s,

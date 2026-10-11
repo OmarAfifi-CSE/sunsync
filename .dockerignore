@@ -1,0 +1,13 @@
+# Never upload secrets or bulk to Cloud build context (source deploys send
+# the whole directory — .env holds LIVE API keys and must stay local-only).
+.env
+.env.local
+__pycache__/
+*.py[cod]
+.git/
+.venv/
+venv/
+internal_docs/
+tests/
+*.mp3
+*.wav
