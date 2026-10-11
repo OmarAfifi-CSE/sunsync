@@ -99,6 +99,7 @@ class CircadianResponse(BaseModel):
     solar_elevation_deg: float = 0.0
     diffuse_irradiance_wm2: float = 0.0
     utc_offset_seconds: int = 0
+    window_state: str = "live"
 
 class DirectiveResponse(BaseModel):
     spoken_directive: str
@@ -141,7 +142,8 @@ def evaluate_solar_window(
     cloud = _extract_cloud_cover(telemetry_df)
 
     gemma_service = GemmaDirectiveService()
-    instant_directive = gemma_service.analytical_directive(window, score, uv, cloud)
+    state = _window_state(window, utc_offset)
+    instant_directive = gemma_service.analytical_directive(window, score, uv, cloud, state)
 
     total_latency_ms = round((time.time() - pipeline_start) * 1000, 2)
 
@@ -162,6 +164,7 @@ def evaluate_solar_window(
         solar_elevation_deg=_sanitize_float(ml_result.get("solar_elevation_deg", 0.0)),
         diffuse_irradiance_wm2=_sanitize_float(ml_result.get("diffuse_irradiance_wm2", 0.0)),
         utc_offset_seconds=utc_offset,
+        window_state=state,
     )
 
 @app.get("/directive", response_model=DirectiveResponse)
@@ -170,15 +173,18 @@ def synthesize_directive(
     score: float = Query(default=80.0, ge=0.0, le=100.0, description="Circadian Recharge Score"),
     uv: float = Query(default=2.5, ge=0.0, le=15.0, description="UV Index"),
     cloud: int = Query(default=20, ge=0, le=100, description="Cloud cover percent"),
+    state: str = Query(default="live", description="Window timing: upcoming, live, or past"),
 ):
     """
     Slow lane: asks live Gemma for a tailored spoken directive. Called by the
     client AFTER /evaluate has already painted, so only this span loads late.
     """
+    if state not in ("upcoming", "live", "past"):
+        state = "live"
     t0 = time.time()
     with sentry_sdk.start_span(op="ai.llm.gemma", name="Gemma Eyes-Free Directive Synthesis") as span_gemma:
         gemma_service = GemmaDirectiveService()
-        spoken_directive, source, model_used = gemma_service.generate_directive_with_source(window, score, uv, cloud)
+        spoken_directive, source, model_used = gemma_service.generate_directive_with_source(window, score, uv, cloud, state)
         llm_ms = round((time.time() - t0) * 1000, 2)
 
         span_gemma.set_data("llm.model", model_used)
@@ -192,6 +198,27 @@ def synthesize_directive(
         llm_latency_ms=llm_ms,
         model=model_used,
     )
+
+def _window_state(window: str, utc_offset: int) -> str:
+    """
+    Classifies the peak window against the PLACE-local now so no directive
+    ever tells a user to chase light that already passed.
+    Returns "upcoming" | "live" | "past" (safe default: "live").
+    """
+    try:
+        from datetime import datetime, timedelta, timezone
+        start = str(window).split("-")[0].strip()
+        hh, mm = (int(x) for x in start.split(":"))
+        now_place = datetime.now(timezone.utc) + timedelta(seconds=int(utc_offset or 0))
+        window_start = now_place.replace(hour=hh, minute=mm, second=0, microsecond=0)
+        delta_min = (window_start - now_place).total_seconds() / 60.0
+        if delta_min > 1:
+            return "upcoming"
+        if delta_min >= -20:
+            return "live"
+        return "past"
+    except Exception:
+        return "live"
 
 def _extract_cloud_cover(telemetry_df) -> int:
     try:

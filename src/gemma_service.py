@@ -8,6 +8,7 @@ Only Gemma models are ever called — no other LLM family is used anywhere.
 """
 
 import os
+import random
 import requests
 
 class GemmaDirectiveService:
@@ -18,6 +19,9 @@ class GemmaDirectiveService:
     # OpenRouter serves NON-reasoning Gemma 3 (which actually answers instead of
     # only thinking) on a free tier. Groq no longer lists any Gemma model, so it
     # is deliberately NOT integrated.
+    # Rotated per request so consecutive briefs never open the same way.
+    # The validator still enforces the facts, so variety never costs truth.
+    OPENERS = ("Quick one:", "Sun check:", "Listen up:", "Fresh air alert:", "Hey you:")
     OPENROUTER_CANDIDATES = ("google/gemma-3-27b-it", "google/gemma-3-12b-it")
     OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
     MAX_ATTEMPTS = 2
@@ -32,18 +36,20 @@ class GemmaDirectiveService:
         except (TypeError, ValueError):
             self.timeout_s = 8.0
 
-    def generate_directive(self, window_time: str, score: int, uv_index: float, cloud_cover: int) -> str:
+    def generate_directive(self, window_time: str, score: int, uv_index: float, cloud_cover: int, state: str = "live") -> str:
         """
         Generates a 15-second human action directive based on atmospheric parameters
         exclusively using Google's official Gemma AI model.
         Returns the live Gemma text, or the instant analytical directive when
         the API cannot answer in time.
+        `state` is one of "upcoming" | "live" | "past" (place-local time) so the
+        directive never tells users to chase a window that already passed.
         """
-        text, _, _ = self.generate_directive_with_source(window_time, score, uv_index, cloud_cover)
+        text, _, _ = self.generate_directive_with_source(window_time, score, uv_index, cloud_cover, state)
         return text
 
     def generate_directive_with_source(self, window_time: str, score: int, uv_index: float,
-                                       cloud_cover: int) -> tuple:
+                                       cloud_cover: int, state: str = "live") -> tuple:
         """
         Same as generate_directive, but also reports where the text came from:
         ("...", "gemma", model_id) for a live model answer,
@@ -55,11 +61,33 @@ class GemmaDirectiveService:
         """
         # Strict prompts, strict validator: the model MUST quote the exact
         # computed facts verbatim (code judges every answer before it ships).
+        # The opener is rotated client-side per request — providers sample too
+        # greedily, so we guarantee freshness instead of hoping for it.
+        # `state` keeps tense honest: never "go now" for a passed window.
+        opener = random.choice(self.OPENERS)
+        if state == "past":
+            timing_rule = (
+                f"Today's peak window \"{window_time}\" has ALREADY passed. "
+                f"Tell them they missed it, do NOT tell them to go outside now, "
+                f"and invite them to catch soft morning light tomorrow instead."
+            )
+        elif state == "upcoming":
+            timing_rule = (
+                f"The peak window \"{window_time}\" opens LATER today. "
+                f"Tell them to get ready and step out when it opens, "
+                f"do NOT say 'right now'."
+            )
+        else:
+            timing_rule = (
+                f"The peak window \"{window_time}\" is happening RIGHT NOW. "
+                f"Urge immediate action."
+            )
         prompt = (
             f"Write exactly one spoken sentence, maximum 30 words, telling a developer "
-            f"to lock their screen and step outside into natural daylight for a 20-minute break. "
+            f"about their daylight break. {timing_rule} "
             f"You MUST include the exact time window \"{window_time}\" and the exact UV value "
             f"\"{uv_index}\" inside the sentence. "
+            f"Start your sentence with exactly \"{opener}\" "
             f"Reply with ONLY the quoted sentence, nothing else."
         )
 
@@ -146,7 +174,7 @@ class GemmaDirectiveService:
                 except Exception:
                     continue
 
-        return self.analytical_directive(window_time, score, uv_index, cloud_cover), "edge", "analytical-edge"
+        return self.analytical_directive(window_time, score, uv_index, cloud_cover, state), "edge", "analytical-edge"
 
     def _try_openrouter(self, prompt: str, model: str):
         """
@@ -160,7 +188,7 @@ class GemmaDirectiveService:
                     "model": model,
                     "messages": [{"role": "user", "content": prompt}],
                     "max_tokens": 120,
-                    "temperature": 0.3,
+                    "temperature": 1.0,
                 },
                 headers={
                     "Content-Type": "application/json",
@@ -201,12 +229,19 @@ class GemmaDirectiveService:
             return False
         return True
 
-    def analytical_directive(self, window_time: str, score: int, uv_index: float, cloud_cover: int) -> str:
+    def analytical_directive(self, window_time: str, score: int, uv_index: float, cloud_cover: int, state: str = "live") -> str:
         """
         Instant on-device directive (zero network). Used as the first-paint
         text and as the fallback when live Gemma cannot answer in time.
+        Time-aware: a passed window is mourned, never chased.
         """
         # Resilient Edge Synthesis (Modeled after Gemma instruction-tuned outputs)
+        if state == "past":
+            return (
+                f"Today's peak melanopic window was {window_time} — that light has passed. "
+                f"Do not chase it now. Catch soft morning light tomorrow instead: step out early, "
+                f"look far, and let daylight anchor your master circadian clock."
+            )
         if uv_index < 3.0:
             uv_note = f"UV is gentle at {uv_index}, making it safe for direct, unshielded viewing"
         elif uv_index < 6.0:
@@ -214,6 +249,12 @@ class GemmaDirectiveService:
         else:
             uv_note = f"UV is elevated at {uv_index}; enjoy indirect daylight in shaded open air"
 
+        if state == "upcoming":
+            return (
+                f"Your peak melanopic solar recharge window opens at {window_time}. "
+                f"{uv_note}. Get ready — when it opens, lock your screen, step outside "
+                f"into natural daylight, and let your retinal cells anchor your master circadian clock."
+            )
         return (
             f"Your peak melanopic solar recharge window opens at {window_time}. "
             f"{uv_note}. Lock your screen, step outside into natural daylight, "

@@ -22,8 +22,6 @@
   const badgeUvStatus = document.getElementById('badge-uv-status');
   const uvScaleMarker = document.getElementById('uv-scale-marker');
   const txtUvHint = document.getElementById('txt-uv-hint');
-  const valLatency = document.getElementById('val-latency');
-  const valModelArch = document.getElementById('val-model-arch');
   const gaugeFill = document.getElementById('gauge-fill');
 
   const directiveQuote = document.getElementById('directive-quote');
@@ -67,7 +65,7 @@
   const detoxVoiceLabel = document.getElementById('detox-voice-label');
 
   // Last computed sky, reused for the spoken outdoor send-off.
-  let lastBrief = { window: 'your solar window', score: 80, uv: 2.5 };
+  let lastBrief = { window: 'your solar window', score: 80, uv: 2.5, state: 'live' };
   let guideAudio = null;
 
   // Place clock: header shows the SELECTED place's local time, not yours.
@@ -92,6 +90,7 @@
   // Fast-lane base timings, used to complete the HUD when Gemma lands.
   let fastBase = { ingest: 0, ml: 0, total: 0 };
   let currentWindowStart = null; // Date for countdown
+  let currentWindowStr = null; // raw window text, re-parsed every tick (self-healing)
 
   const GAUGE_CIRCUMFERENCE = 263.89;
 
@@ -169,13 +168,28 @@
     if (!windowStr) return null;
     const m = String(windowStr).match(/(\d{1,2}):(\d{2})/);
     if (!m) return null;
-    const d = new Date();
-    d.setHours(parseInt(m[1], 10), parseInt(m[2], 10), 0, 0);
-    return d;
+    const hh = parseInt(m[1], 10);
+    const mm = parseInt(m[2], 10);
+    if (placeOffsetSec === null || !Number.isFinite(placeOffsetSec)) {
+      // No place offset yet: legacy viewer-local interpretation.
+      const d = new Date();
+      d.setHours(hh, mm, 0, 0);
+      return d;
+    }
+    // Absolute instant of the window in PLACE time: shift now into the
+    // place frame, take that frame's midnight, add wall time, shift back.
+    // (Parsing "13:15" on the viewer's clock breaks across timezones —
+    // 13:15 New York is not 13:15 Cairo.)
+    const shifted = Date.now() + placeOffsetSec * 1000;
+    const dayStart = Math.floor(shifted / 86400000) * 86400000;
+    return new Date(dayStart + (hh * 60 + mm) * 60000 - placeOffsetSec * 1000);
   }
 
   function updateCountdown() {
-    if (!glanceCountdown || !currentWindowStart) return;
+    if (!glanceCountdown) return;
+    // Re-parse every tick: immune to stale offsets, DST edges, and ordering bugs.
+    if (currentWindowStr) currentWindowStart = parseWindowStart(currentWindowStr);
+    if (!currentWindowStart) return;
     const now = new Date();
     const diffMs = currentWindowStart - now;
     const diffMin = Math.round(diffMs / 60000);
@@ -187,6 +201,32 @@
       glanceCountdown.textContent = '● live now — go outside';
     } else {
       glanceCountdown.textContent = 'done for today · see morning light';
+    }
+    updateVerdict(diffMin);
+  }
+
+  // The decision card: the only question a user has is "go now or wait?"
+  // Flips live every second from the countdown — no refetch needed.
+  function updateVerdict(diffMin) {
+    const el = document.getElementById('val-verdict');
+    const hint = document.getElementById('txt-verdict-hint');
+    const card = document.getElementById('card-verdict');
+    if (!el || !card || diffMin === undefined) return;
+    card.classList.remove('gold-accent', 'amber-accent', 'cyan-accent', 'emerald-accent');
+    if (diffMin > 1) {
+      const h = Math.floor(diffMin / 60);
+      const m = diffMin % 60;
+      el.textContent = h > 0 ? `Wait ${h}h ${m}m` : `Wait ${m} min`;
+      if (hint) hint.textContent = 'Soft daylight now still counts — save eyes for the peak';
+      card.classList.add('amber-accent');
+    } else if (diffMin >= -20) {
+      el.textContent = 'GO NOW 🌿';
+      if (hint) hint.textContent = 'Window is live — lock screen, step out';
+      card.classList.add('emerald-accent');
+    } else {
+      el.textContent = 'Done today';
+      if (hint) hint.textContent = 'Catch soft morning light tomorrow';
+      card.classList.add('gold-accent');
     }
   }
 
@@ -202,7 +242,7 @@
 
   // ---------- Scroll reveal ----------
   function setupReveal() {
-    const els = document.querySelectorAll('.card, .metric-card, .principles, .quiet-panel, .recharge-action-card, .hero-copy, .glance-card');
+    const els = document.querySelectorAll('.card, .metric-card, .quiet-panel, .recharge-action-card, .hero-copy, .glance-card');
     if (!('IntersectionObserver' in window)) return;
     els.forEach(el => el.classList.add('reveal'));
     const io = new IntersectionObserver((entries) => {
@@ -419,6 +459,7 @@
       score: Math.round(data.recharge_score || 0),
       uv: parseFloat(data.uv_index || 0).toFixed(1),
       cloud: Math.round(data.cloud_cover_pct ?? 20),
+      state: data.window_state || 'live',
     });
     try {
       const resp = await fetch(`/directive?${params.toString()}`, { signal: directiveAborter.signal });
@@ -469,6 +510,12 @@
     }
     const windowStr = data.optimal_window || '12:00 – 12:20';
     if (valWindow) valWindow.textContent = windowStr;
+    // Offset FIRST, then parse: the window must be interpreted in the NEW
+    // city's frame, never the previous city's (stale-offset = stuck verdict).
+    if (typeof data.utc_offset_seconds === 'number' && Number.isFinite(data.utc_offset_seconds)) {
+      placeOffsetSec = data.utc_offset_seconds;
+    }
+    currentWindowStr = windowStr;
     currentWindowStart = parseWindowStart(windowStr);
 
     const score = Math.round(data.recharge_score || 0);
@@ -544,19 +591,13 @@
       if (uvScaleMarker) uvScaleMarker.style.backgroundColor = barColor;
     }
 
-    if (valLatency) valLatency.innerHTML = `${Math.round(data.ml_latency_ms || 210)}<span class="metric-sub-unit">ms</span>`;
-    if (valModelArch) valModelArch.textContent = data.model_provider || 'Prior Labs TabPFN Transformer';
     if (txtWindowHint) txtWindowHint.textContent = score >= 50 ? 'Step out now — light is worth it' : 'Soft morning/evening light still counts';
 
     if (directiveQuote) directiveQuote.textContent = `"${data.spoken_directive}"`;
 
     // Remember this sky for the spoken outdoor send-off.
-    lastBrief = { window: windowStr, score, uv: parseFloat(uv) };
+    lastBrief = { window: windowStr, score, uv: parseFloat(uv), state: data.window_state || 'live' };
 
-    // Header clock follows the evaluated place, not the viewer.
-    if (typeof data.utc_offset_seconds === 'number' && Number.isFinite(data.utc_offset_seconds)) {
-      placeOffsetSec = data.utc_offset_seconds;
-    }
     setClockLoading(false);
 
     const totalMs = data.total_pipeline_ms || 320;
@@ -840,6 +881,14 @@
 
   // ---------- Detox modal ----------
   function buildSendoff() {
+    // Past peak? Never chase dead light — invite tomorrow morning instead.
+    if (lastBrief.state === 'past') {
+      return (
+        `Today's peak light at ${lastBrief.window} has passed — do not chase it now. ` +
+        `Still, twenty soft minutes outside will do you good. Step out, look far, ` +
+        `and breathe slowly. Tomorrow morning, catch the early light instead. Begin.`
+      );
+    }
     const uvWord = lastBrief.uv >= 6 ? 'strong, so settle into open shade'
       : lastBrief.uv >= 3 ? 'moderate and perfect for ambient light'
       : 'gentle and safe';

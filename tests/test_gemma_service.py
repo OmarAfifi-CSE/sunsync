@@ -87,5 +87,29 @@ class TestGemmaDirectiveService(unittest.TestCase):
         self.assertEqual(model, "analytical-edge")
         self.assertIn("14:15", text)
 
+    def test_past_state_never_says_go_now(self):
+        """Verify a passed window is mourned, never chased."""
+        svc = GemmaDirectiveService()
+        svc.google_api_key = None
+        svc.openrouter_api_key = None
+        text, source, _ = svc.generate_directive_with_source(
+            "14:15 - 14:35", 100, 5.3, 10, state="past")
+        self.assertEqual(source, "edge")
+        lowered = text.lower()
+        self.assertIn("14:15", text)
+        self.assertNotIn("lock your screen, step outside", lowered)
+        self.assertTrue("missed" in lowered or "tomorrow" in lowered)
+
+    def test_upcoming_state_says_get_ready(self):
+        """Verify a future window tells users to wait for it, not rush now."""
+        svc = GemmaDirectiveService()
+        svc.google_api_key = None
+        svc.openrouter_api_key = None
+        text, source, _ = svc.generate_directive_with_source(
+            "14:15 - 14:35", 90, 3.1, 10, state="upcoming")
+        self.assertEqual(source, "edge")
+        self.assertIn("14:15", text)
+        self.assertIn("opens at", text.lower())
+
 if __name__ == "__main__":
     unittest.main()

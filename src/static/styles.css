@@ -134,15 +134,6 @@ body.is-loading .directive-text {
 .live-clock.loading { opacity: 0.35; animation: ethos-blink 1s infinite ease-in-out; }
 .live-date { font-size: 0.78rem; color: var(--muted); font-weight: 500; }
 .system-status-pills { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.status-badge {
-  display: inline-flex; align-items: center; gap: 7px;
-  background: var(--leaf-soft); border: 1px solid #BBF7D0; color: #166534;
-  padding: 5px 12px; border-radius: var(--r-pill);
-  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em;
-}
-.status-badge.observability { background: var(--grape-soft); border-color: #DDD6FE; color: #6D28D9; }
-.pulse-dot { width: 7px; height: 7px; border-radius: 50%; background: #16A34A; animation: ethos-blink 2s infinite; }
-.sentry-dot { width: 7px; height: 7px; border-radius: 50%; background: #8B5CF6; }
 .github-badge {
   display: inline-flex; align-items: center; gap: 6px;
   background: var(--ink); color: #fff; padding: 6px 14px; border-radius: var(--r-pill);
@@ -200,7 +191,7 @@ body.is-loading .directive-text {
   box-shadow: var(--shadow-card);
 }
 .btn-secondary:hover { border-color: var(--leaf); color: var(--leaf); transform: translateY(-2px); }
-.hero-proof { display: flex; align-items: center; gap: 18px; margin-bottom: 14px; }
+.hero-proof { display: flex; align-items: center; gap: 18px; row-gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
 .proof-item { display: flex; flex-direction: column; }
 .proof-item strong { font-size: 1.25rem; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
 .proof-item span { font-size: 0.74rem; color: var(--muted); font-weight: 500; }
@@ -253,19 +244,6 @@ body.is-loading .directive-text {
 .btn-outside:hover { background: rgba(255,255,255,0.2); transform: translateY(-2px); }
 .glance-foot { font-size: 0.73rem; color: rgba(254,215,170,0.7); text-align: center; position: relative; z-index: 1; }
 
-/* ---------- Principles strip ---------- */
-.principles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
-.principle {
-  background: var(--card); border: 1px solid var(--line-soft); border-radius: var(--r-md);
-  padding: 16px 18px; display: flex; gap: 13px; align-items: flex-start;
-  box-shadow: var(--shadow-card); transition: transform 0.25s ease;
-}
-.principle:hover { transform: translateY(-3px); }
-.p-icon { width: 38px; height: 38px; border-radius: 12px; background: var(--peach); border: 1px solid var(--peach-deep); display: inline-flex; align-items: center; justify-content: center; font-size: 1.15rem; flex-shrink: 0; }
-.principle div { display: flex; flex-direction: column; gap: 1px; }
-.principle strong { font-size: 0.86rem; font-weight: 800; color: var(--ink); font-family: var(--font-display); }
-.principle span { font-size: 0.78rem; color: var(--muted); }
-
 /* ---------- Cards ---------- */
 .card {
   background: var(--card); border: 1px solid var(--line-soft);
@@ -281,7 +259,7 @@ body.is-loading .directive-text {
 .btn-geo {
   display: inline-flex; align-items: center; gap: 8px;
   background: var(--sky-soft); border: 1.5px solid #BAE6FD; color: #0369A1;
-  padding: 10px 18px; border-radius: 12px; font-size: 0.83rem; font-weight: 700; cursor: pointer;
+  padding: 12px 18px; border-radius: 12px; font-size: 0.83rem; font-weight: 700; cursor: pointer;
   transition: all 0.22s ease; font-family: var(--font-ui); white-space: nowrap;
 }
 .btn-geo:hover { background: #BAE6FD; transform: translateY(-1px); }
@@ -293,7 +271,7 @@ body.is-loading .directive-text {
 .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: var(--faint); pointer-events: none; }
 #input-search {
   width: 100%; background: var(--paper-2); border: 1.5px solid var(--line); border-radius: 14px;
-  padding: 13px 16px 13px 44px; font-family: var(--font-ui); font-size: 0.92rem; font-weight: 500;
+  padding: 13px 16px 13px 44px; font-family: var(--font-ui); font-size: 16px; font-weight: 500;
   color: var(--ink); outline: none; transition: all 0.2s ease;
 }
 #input-search::placeholder { color: var(--faint); }
@@ -305,10 +283,10 @@ body.is-loading .directive-text {
   overflow: hidden; max-height: 264px; overflow-y: auto;
 }
 .search-item {
-  display: flex; align-items: baseline; gap: 8px; width: 100%;
+  display: flex; align-items: baseline; gap: 8px; width: 100%; min-height: 48px;
   background: transparent; border: none; border-bottom: 1px solid var(--line-soft);
-  padding: 11px 16px; cursor: pointer; text-align: left; font-family: var(--font-ui);
-  transition: background 0.15s ease;
+  padding: 12px 16px; cursor: pointer; text-align: left; font-family: var(--font-ui);
+  transition: background 0.15s ease; -webkit-tap-highlight-color: transparent;
 }
 .search-item:last-child { border-bottom: none; }
 .search-item:hover, .search-item.active { background: var(--peach); }
@@ -318,8 +296,9 @@ body.is-loading .directive-text {
 .search-note { padding: 11px 16px; font-size: 0.78rem; color: var(--muted); }
 .chip {
   background: var(--paper); border: 1.5px solid var(--line); color: var(--ink-2);
-  padding: 8px 16px; border-radius: var(--r-pill); font-size: 0.8rem; font-weight: 600; cursor: pointer;
-  transition: all 0.2s ease; font-family: var(--font-ui);
+  padding: 10px 18px; border-radius: var(--r-pill); font-size: 0.8rem; font-weight: 600; cursor: pointer;
+  transition: all 0.2s ease; font-family: var(--font-ui); min-height: 42px;
+  -webkit-tap-highlight-color: transparent;
 }
 .chip:hover { border-color: var(--amber); color: var(--sun-deep); background: var(--peach); }
 .chip.active { background: var(--ink); color: #fff; border-color: var(--ink); font-weight: 700; box-shadow: 0 6px 16px -4px rgba(28,25,23,0.4); }
@@ -543,7 +522,7 @@ body.is-loading .directive-text {
 .detox-modal { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.45s ease; padding: 20px; }
 .detox-modal.active { opacity: 1; pointer-events: auto; }
 .detox-backdrop { position: absolute; inset: 0; background: linear-gradient(160deg, rgba(250,246,237,0.97), rgba(255,247,237,0.97)); backdrop-filter: blur(24px); }
-.detox-content { position: relative; z-index: 2; text-align: center; max-width: 560px; width: 100%; background: #fff; border: 1px solid var(--line); border-radius: 30px; padding: 44px 40px; box-shadow: 0 40px 100px -20px rgba(194,65,12,0.35); transform: translateY(16px) scale(0.98); transition: transform 0.45s cubic-bezier(0.34,1.4,0.64,1); }
+.detox-content { position: relative; z-index: 2; text-align: center; max-width: 560px; width: 100%; max-height: 92vh; max-height: 92dvh; overflow-y: auto; background: #fff; border: 1px solid var(--line); border-radius: 30px; padding: 44px 40px; box-shadow: 0 40px 100px -20px rgba(194,65,12,0.35); transform: translateY(16px) scale(0.98); transition: transform 0.45s cubic-bezier(0.34,1.4,0.64,1); overscroll-behavior: contain; }
 .detox-modal.active .detox-content { transform: translateY(0) scale(1); }
 .detox-kicker { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; color: var(--leaf); background: var(--leaf-soft); display: inline-block; padding: 5px 15px; border-radius: var(--r-pill); margin-bottom: 22px; }
 .detox-zen-ring { position: relative; width: 230px; height: 230px; margin: 0 auto 26px; display: flex; align-items: center; justify-content: center; }
@@ -596,7 +575,6 @@ body.is-loading .directive-text {
   .hero { grid-template-columns: 1fr; }
   .metrics-grid { grid-template-columns: 1fr 1fr; }
   .science-content { grid-template-columns: 1fr; }
-  .principles { grid-template-columns: 1fr; }
 }
 @media (max-width: 640px) {
   .app-layout { padding: 28px 16px 48px; gap: 22px; }
@@ -607,12 +585,22 @@ body.is-loading .directive-text {
   .metrics-grid { grid-template-columns: 1fr; }
   .metric-card { min-height: auto; }
   .hero-headline { font-size: 2.3rem; }
+  .hero-ctas .btn-primary, .hero-ctas .btn-secondary { flex: 1 1 100%; justify-content: center; }
+  .hero-proof { gap: 12px; }
+  .proof-divider { display: none; }
+  .glance-card { padding: 24px 20px; border-radius: 22px; }
   .glance-actions { grid-template-columns: 1fr; }
   .span-row { grid-template-columns: 1fr; gap: 6px; }
   .span-duration { text-align: left; }
   .recharge-inner { padding: 36px 22px; }
-  .detox-content { padding: 32px 24px; }
+  .detox-content { padding: 32px 24px; border-radius: 24px; }
+  .detox-zen-ring { width: 200px; height: 200px; }
+  .detox-timer { font-size: 2.4rem; }
+  .detox-headline { font-size: 1.5rem; }
   .chart-legend { width: 100%; justify-content: center; }
+  .audio-caption { max-width: none; text-align: left; margin-left: 0; }
+  .toast-container { left: 16px; right: 16px; bottom: 16px; }
+  .toast { max-width: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {
