@@ -1,10 +1,8 @@
 <div align="center">
 
 <a href="https://sunsync-engine.onrender.com/" target="_blank">
-  <img src="src/static/favicon.svg" width="115" height="115" alt="SunSync Emblem" style="border-radius: 28px; box-shadow: 0 10px 30px rgba(234, 88, 12, 0.25);" />
+  <img src="src/static/favicon.svg" width="110" height="110" alt="SunSync Emblem" style="border-radius: 26px; box-shadow: 0 10px 30px rgba(234, 88, 12, 0.25);" />
 </a>
-<br /><br />
-<img src="src/static/logo.svg" width="260" alt="SunSync Logotype" />
 
 # ☀️ SunSync
 
@@ -38,7 +36,7 @@
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" target="_blank">
-    <img src="https://img.shields.io/badge/📖_DEV.to_Post-Hacktoberfest_2026-0A0A1A?style=for-the-badge&labelColor=0A0A1A&logo=devdotto" alt="DEV.to Post" />
+    <img src="https://img.shields.io/badge/📖_Architecture_Deep_Dive-Read_on_DEV.to-0A0A1A?style=for-the-badge&labelColor=0A0A1A&logo=devdotto" alt="Architecture Deep Dive on DEV.to" />
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://sunsync-engine.onrender.com/docs" target="_blank">
@@ -130,14 +128,46 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 
 ## 📱 Mobile-First Interface Showcase
 
-<div align="center">
-
-| ☀️ 01 · Hero Protocol | ⏱️ 02 · 20-Min Sun Window | 🎙️ 03 · Gemma Spoken Brief | 🌿 04 · Touch Grass Protocol |
-| :---: | :---: | :---: | :---: |
-| <img src="docs/screenshots/mobile-hero.jpg" width="220" height="484" alt="SunSync Mobile Hero Dashboard" /> | <img src="docs/screenshots/mobile-glance-window.jpg" width="220" height="484" alt="SunSync Mobile 20-Minute Solar Window" /> | <img src="docs/screenshots/mobile-gemma-voice-brief.jpg" width="220" height="484" alt="SunSync Mobile Gemma Spoken Brief" /> | <img src="docs/screenshots/mobile-touch-grass-protocol.jpg" width="220" height="484" alt="SunSync Mobile Touch Grass Protocol" /> |
-| *Editorial daylight typography & zero-screen manifesto: under 60 seconds on screen, 20 minutes under the sky.* | *Dynamic solar window calculation (13:15–13:35), circadian recharge score (100/100), and UV safety index.* | *Programmatically fact-verified Google Gemma directive with low-latency ElevenLabs Charlie audio playback.* | *The outdoor commitment card: lock workstation, step into ambient daylight, and gaze at the open horizon.* |
-
-</div>
+<table width="100%">
+  <thead>
+    <tr>
+      <th width="25%" align="center">☀️ 01 · Hero Protocol</th>
+      <th width="25%" align="center">⏱️ 02 · 20-Min Sun Window</th>
+      <th width="25%" align="center">🎙️ 03 · Gemma Spoken Brief</th>
+      <th width="25%" align="center">🌿 04 · Touch Grass Protocol</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr valign="top">
+      <td width="25%" align="center">
+        <img src="docs/screenshots/mobile-hero.jpg" width="100%" alt="SunSync Mobile Hero Dashboard" />
+      </td>
+      <td width="25%" align="center">
+        <img src="docs/screenshots/mobile-glance-window.jpg" width="100%" alt="SunSync Mobile 20-Minute Solar Window" />
+      </td>
+      <td width="25%" align="center">
+        <img src="docs/screenshots/mobile-gemma-voice-brief.jpg" width="100%" alt="SunSync Mobile Gemma Spoken Brief" />
+      </td>
+      <td width="25%" align="center">
+        <img src="docs/screenshots/mobile-touch-grass-protocol.jpg" width="100%" alt="SunSync Mobile Touch Grass Protocol" />
+      </td>
+    </tr>
+    <tr valign="top">
+      <td width="25%" align="center">
+        <sub><em>Editorial daylight typography &amp; zero-screen manifesto.</em></sub>
+      </td>
+      <td width="25%" align="center">
+        <sub><em>Dynamic solar window calculation (13:15–13:35) &amp; recharge score.</em></sub>
+      </td>
+      <td width="25%" align="center">
+        <sub><em>Fact-verified Google Gemma directive with ElevenLabs audio playback.</em></sub>
+      </td>
+      <td width="25%" align="center">
+        <sub><em>The outdoor commitment card: lock workstation &amp; step outside.</em></sub>
+      </td>
+    </tr>
+  </tbody>
+</table>
 
 <br/>
 
@@ -192,9 +222,9 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 
 ---
 
-## 🛠️ Technical Stack Matrix & Sponsor Integrations
+## 🛠️ Technical Stack & Architectural Core
 
-| Architectural Layer | Technology / Sponsor | Version / Spec | Role & Architectural Justification |
+| Architectural Layer | Technology / Framework | Version / Spec | Role & Architectural Justification |
 | :--- | :--- | :---: | :--- |
 | **Tabular ML Core** | **Prior Labs TabPFN** | Foundation Model | Foundation tabular transformer evaluating multi-dimensional atmospheric tables for zero-shot Equivalent Melanopic Lux forecasting on live CPU. |
 | **Cognitive Directive** | **Google Gemma** | `gemma-4-26b-a4b-it` | Lightweight open-weight AI model synthesizing tabular ML outputs into a 15-second human directive via Google AI Studio. |
@@ -244,5 +274,5 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for complete terms.
 
 <div align="center">
-  <sub>Built with intentionality for the Hacktoberfest 2026 Challenge. Empowering developers to reclaim their circadian health, one solar window at a time.</sub>
+  <sub>Engineered with mathematical rigor for developers and knowledge workers worldwide. Empowering humans to reclaim their circadian biology, one solar window at a time.</sub>
 </div>

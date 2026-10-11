@@ -348,16 +348,32 @@
   }
 
   // ---------- Geolocation ----------
+  // Auto-ask once per visit (shortly after first paint + a why-toast), so the
+  // sky is yours without a tap. Silent on failure — default city just stands.
+  let autoGeoDone = false;
+
   function setupGeolocation() {
     if (!btnGeolocate) return;
-    btnGeolocate.addEventListener('click', () => {
-      if (!navigator.geolocation) {
-        showToast('Geolocation is not supported by your browser');
-        return;
-      }
-      const original = btnGeolocate.innerHTML;
-      btnGeolocate.innerHTML = '<span>Detecting…</span>';
-      navigator.geolocation.getCurrentPosition(
+    btnGeolocate.addEventListener('click', () => requestGeolocation(false));
+    setTimeout(() => {
+      if (autoGeoDone) return;
+      autoGeoDone = true;
+      // Only auto-ask if the user hasn't already picked a place themselves.
+      if (placeLabel !== 'New York') return;
+      if (!navigator.geolocation) return;
+      showToast('📍 Allow location for your exact sky — or pick any city below');
+      setTimeout(() => requestGeolocation(true), 900);
+    }, 1800);
+  }
+
+  function requestGeolocation(silent) {
+    if (!navigator.geolocation) {
+      if (!silent) showToast('Geolocation is not supported by your browser');
+      return;
+    }
+    const original = btnGeolocate.innerHTML;
+    btnGeolocate.innerHTML = '<span>Detecting…</span>';
+    navigator.geolocation.getCurrentPosition(
         (position) => {
           const lat = parseFloat(position.coords.latitude.toFixed(4));
           const lon = parseFloat(position.coords.longitude.toFixed(4));
@@ -371,11 +387,11 @@
         },
         (error) => {
           btnGeolocate.innerHTML = original;
-          showToast('Could not access GPS: ' + error.message);
+          // Silent auto-attempts never nag: the default city simply stands.
+          if (!silent) showToast('Could not access GPS: ' + error.message);
         },
-        { timeout: 8000 }
+        { timeout: 10000, maximumAge: 300000 }
       );
-    });
   }
 
   // ---------- Form ----------
