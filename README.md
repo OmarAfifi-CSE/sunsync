@@ -7,7 +7,7 @@
 # ☀️ SunSync
 
 <a href="https://git.io/typing-svg">
-  <img src="https://readme-typing-svg.demolab.com?font=Outfit&weight=600&size=20&duration=3000&pause=1000&color=EA580C&center=true&vCenter=true&width=620&lines=Edge+Photobiology+AI+%26+Circadian+Realignment;Prior+Labs+TabPFN+Foundation+ML+on+CPU;15-Second+Eyes-Free+Spoken+Daylight+Brief;Sub-300ms+Fast-Path+Telemetry+Pipeline;Glance+for+60s.+Recharge+Outside+for+20m." alt="SunSync Value Proposition" />
+  <img src="https://readme-typing-svg.demolab.com?font=Outfit&weight=600&size=20&duration=3000&pause=1000&color=EA580C&center=true&vCenter=true&width=620&lines=Edge+Photobiology+AI+%26+Circadian+Realignment;Prior+Labs+TabPFN+Foundation+ML+on+CPU;15-Second+Eyes-Free+Spoken+Daylight+Brief;Progressive+Fast-Lane+Zero-UI-Blocking;Glance+for+60s.+Recharge+Outside+for+20m." alt="SunSync Value Proposition" />
 </a>
 
 <p align="center">
@@ -23,7 +23,7 @@
 <p align="center">
   <!-- Tier 2: Quality & Metric Proof Badges -->
   <img src="https://img.shields.io/badge/Tests-24_Passing-brightgreen?style=flat-square" alt="Tests" />
-  <img src="https://img.shields.io/badge/Fast--Path_Latency-%3C300ms-0284C7?style=flat-square" alt="Latency" />
+  <img src="https://img.shields.io/badge/Fast--Lane-Progressive_Design-0284C7?style=flat-square" alt="Fast Lane" />
   <img src="https://img.shields.io/badge/Hallucinations-Zero_Tolerance_Gate-7C3AED?style=flat-square" alt="Zero Hallucination" />
   <img src="https://img.shields.io/badge/Telemetry-Sentry_Agent_Tracing-362D59?style=flat-square&logo=sentry&logoColor=white" alt="Sentry" />
   <img src="https://img.shields.io/badge/License-MIT-F59E0B?style=flat-square" alt="License" />
@@ -113,7 +113,7 @@ Modern software engineering environments create an acute biological mismatch:
 SunSync enforces four non-negotiable engineering invariants:
 
 ### 1. Fast-Lane Decoupling (`src/app.py`)
-The primary `/evaluate` endpoint immediately returns deterministic solar metrics, UV safety, and TabPFN scoring without waiting for generative LLMs or audio synthesis. The live Gemma directive (`/directive`) and voice synthesis (`/synthesize-audio`) run as a background slow lane that upgrades the quote in place — first paint in ~2.5 s, zero UI blocking.
+The primary `/evaluate` endpoint immediately returns deterministic solar metrics, UV safety, and TabPFN scoring without waiting for generative LLMs or audio synthesis. The live Gemma directive (`/directive`) and voice synthesis (`/synthesize-audio`) run as a background slow lane that upgrades the quote in place — first paint never waits, zero UI blocking.
 
 ### 2. Zero-Hallucination Fact-Checking Guardrail (`src/gemma_service.py`)
 Google Gemma synthesizes natural speech directives under strict programmatic validation (`validate_directive()`). Every numerical claim (window time, UV index) is verified against deterministic ground truth. If any hallucination or drift is detected, the system instantaneously falls back to safe scientific copy.
@@ -235,8 +235,8 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 | **Eyes-Free Audio** | **ElevenLabs** | `eleven_flash_v2_5` | Real-time speech synthesis using premade Charlie voice (`IKne3meq5aSn9XLyUdCD`) so developers step outside without screens. |
 | **Telemetry & Spans** | **Sentry Agent Tracing** | SDK 2.x | Distributed transaction tracing across `ai.telemetry.ingest`, `ai.model.tabpfn`, and `ai.llm.gemma` spans. |
 | **PaaS Hosting** | **Render** | Declarative YAML | Automated container deployment (`render.yaml`) hosting production web service with zero-downtime healthcheck. |
-| **Backend Gateway** | **FastAPI** | `0.141.1` (verified) | Asynchronous high-throughput ASGI web framework powering OpenAPI docs and dual-lane endpoints. |
-| **Data Validation** | **Pydantic** | `2.12.5` (verified) | Strict type-safety and serialization contracts for photobiological data transfers. |
+| **Backend Gateway** | **FastAPI** | `0.143.0` (prod build) | Asynchronous high-throughput ASGI web framework powering OpenAPI docs and dual-lane endpoints. |
+| **Data Validation** | **Pydantic** | `2.14.0` (prod build) | Strict type-safety and serialization contracts for photobiological data transfers. |
 | **Atmospheric Source** | **Open-Meteo** | Free REST API | High-resolution hourly solar telemetry (DNI, DHI, UV, cloud cover, elevation). |
 
 ---

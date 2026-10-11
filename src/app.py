@@ -10,6 +10,7 @@ instant-paint static frontend.
 import os
 import sys
 import math
+import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -52,10 +53,18 @@ if sentry_dsn:
 
 @asynccontextmanager
 async def _lifespan(_: FastAPI):
-    # Pay TabPFN's one-time init cost at boot so the first user request
-    # never waits on model cold-start. Never blocks deployment on failure.
+    # Model prep runs in a BACKGROUND thread: boot must stay light so the
+    # platform health gate passes in seconds. A heavy synchronous warm-up
+    # (torch import + weight prep on a 512MB instance) can stall boot past
+    # the health grace period and brick the deploy into gateway-502.
+    # First requests use the analytical baseline until weights are ready.
+    def _background_warmup():
+        try:
+            ml_engine.warm_up()
+        except Exception:
+            pass
     try:
-        ml_engine.warm_up()
+        threading.Thread(target=_background_warmup, daemon=True).start()
     except Exception:
         pass
     yield
@@ -118,7 +127,26 @@ class AudioSynthesisRequest(BaseModel):
 
 @app.get("/health")
 def health_check():
-    return {"status": "healthy", "service": "sunsync-core", "version": "1.0.0"}
+    reg = getattr(ml_engine, "_regressor", None)
+    if reg is None:
+        ml_state = "warming"
+    elif reg == "FALLBACK":
+        ml_state = "analytical-baseline"
+    else:
+        ml_state = "tabpfn-ready"
+    return {
+        "status": "healthy",
+        "service": "sunsync-core",
+        "version": "1.0.0",
+        "ml_engine": ml_state,
+        "integrations": {
+            "gemma_openrouter": bool(os.getenv("OPENROUTER_API_KEY")),
+            "gemma_google": bool(os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")),
+            "elevenlabs": bool(os.getenv("ELEVENLABS_API_KEY")),
+            "tabpfn_token": bool(os.getenv("TABPFN_TOKEN")),
+            "sentry": bool(sentry_dsn),
+        },
+    }
 
 @app.get("/evaluate", response_model=CircadianResponse)
 def evaluate_solar_window(
@@ -344,7 +372,10 @@ def serve_favicon():
 def serve_index():
     index_path = STATIC_DIR / "index.html"
     if index_path.exists():
-        return FileResponse(str(index_path))
+        # Never cache the shell: it carries the ?v= asset pins, so clients
+        # always discover fresh JS/CSS on plain refresh — no more stale-code
+        # ghosts, no more "did you hard-refresh" support threads.
+        return FileResponse(str(index_path), headers={"Cache-Control": "no-store"})
     return {"status": "ok", "message": "SunSync API active. Static dashboard folder not initialized."}
 
 

@@ -430,6 +430,15 @@
     evalAborter = new AbortController();
     setClockLoading(true);
 
+    // Hard timeout: a struggling host must NEVER leave the page stuck in
+    // pending-forever. 45s, then a graceful offline state with retry.
+    let evalTimedOut = false;
+    const fetchTimer = setTimeout(() => {
+      evalTimedOut = true;
+      try { evalAborter.abort(new DOMException('Timed out', 'TimeoutError')); }
+      catch (e) { try { evalAborter.abort(); } catch (_) { /* noop */ } }
+    }, 45000);
+
     const btnTextEl = btnCalculate ? btnCalculate.querySelector('.btn-text') : null;
     if (btnCalculate) { btnCalculate.classList.add('loading'); btnCalculate.disabled = true; }
     startStages(btnTextEl);
@@ -444,15 +453,32 @@
       // Slow lane: Gemma refines the draft quote without blocking anything.
       enhanceWithGemma(data);
     } catch (err) {
-      if (err && err.name === 'AbortError') { stopStages(btnTextEl); return; } // superseded: newer tap owns the clock
+      clearTimeout(fetchTimer);
+      if (err && err.name === 'AbortError' && !evalTimedOut) { stopStages(btnTextEl); return; } // superseded: newer tap owns the clock
       setClockLoading(false);
       // Failed before any data: never leave the badge stuck on "writing".
       setDirectiveStatus('', '✎ instant draft');
-      showToast('Error calculating solar telemetry: ' + err.message);
+      if (err && err.name === 'AbortError') {
+        showToast('Sky is taking too long — tap Calculate to retry 🛰️');
+      } else {
+        showToast('Error calculating solar telemetry: ' + err.message);
+      }
+      unlockOfflineActions();
     } finally {
+      clearTimeout(fetchTimer);
       stopStages(btnTextEl);
       if (btnCalculate) { btnCalculate.classList.remove('loading'); btnCalculate.disabled = false; }
     }
+  }
+
+  // Offline dignity: the detox timer is purely local — it must work even when
+  // the sky is unreachable. Copy/Listen stay locked (they need live text).
+  function unlockOfflineActions() {
+    ['btn-start-detox', 'btn-start-detox-hero', 'btn-start-detox-main'].forEach((id) => {
+      const b = document.getElementById(id);
+      if (b) b.disabled = false;
+    });
+    if (glanceSub) glanceSub.textContent = 'Sky unreachable — tap Calculate to retry';
   }
 
   // ---------- Gemma slow-lane upgrade ----------
@@ -859,12 +885,40 @@
     return el;
   }
 
+  // Last-resort voice: if ElevenLabs is down/out of quota mid-judging, the
+  // browser itself speaks the same text. Same words, zero network, zero cost.
+  function speakViaBrowser(text) {
+    try {
+      if (!('speechSynthesis' in window)) return false;
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 0.95;
+      u.pitch = 1.0;
+      const vs = window.speechSynthesis.getVoices() || [];
+      const pick = vs.find((v) => v.lang && v.lang.toLowerCase().startsWith('en') &&
+        /male|daniel|david|guy|george|fred|james/i.test(v.name || ''))
+        || vs.find((v) => v.lang && v.lang.toLowerCase().startsWith('en'));
+      if (pick) u.voice = pick;
+      window.speechSynthesis.speak(u);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function stopBrowserSpeech() {
+    try {
+      if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    } catch (e) { /* noop */ }
+  }
+
   function setupAudioPlayer() {
     if (!btnPlayAudio) return;
     btnPlayAudio.addEventListener('click', async () => {
       if (isAudioPlaying && currentAudio) {
         currentAudio.pause();
         setAudioUI(false, 'Listen · eyes-free');
+        stopBrowserSpeech();
         return;
       }
       const text = (directiveQuote ? directiveQuote.textContent : '').replace(/^"|"$/g, '').trim();
@@ -884,8 +938,13 @@
         setAudioUI(true, 'Playing… eyes closed');
         currentAudio.onended = () => setAudioUI(false, 'Replay brief');
       } catch (err) {
-        showToast('Audio playback error: ' + err.message);
-        setAudioUI(false, 'Listen · eyes-free');
+        if (speakViaBrowser(text)) {
+          showToast('ElevenLabs busy — browser voice reading instead 🔊');
+          setAudioUI(false, 'Replay brief');
+        } else {
+          showToast('Audio playback error: ' + err.message);
+          setAudioUI(false, 'Listen · eyes-free');
+        }
       } finally {
         btnPlayAudio.disabled = false;
       }
@@ -959,11 +1018,17 @@
       }
       setVoiceStatus('playing', '🔊 Charlie is guiding you — phone face-down');
     } catch (err) {
-      setVoiceStatus('failed', '🔇 Voice unavailable — breathe on anyway 🌿');
+      // ElevenLabs down/quota-dead: same send-off via the browser voice.
+      if (speakViaBrowser(buildSendoff())) {
+        setVoiceStatus('audible', '🔊 Browser voice guiding — phone face-down');
+      } else {
+        setVoiceStatus('failed', '🔇 Voice unavailable — breathe on anyway 🌿');
+      }
     }
   }
 
   function stopDetoxGuide() {
+    stopBrowserSpeech();
     if (guideAudio) {
       try { guideAudio.pause(); } catch (e) { /* noop */ }
       guideAudio = null;
