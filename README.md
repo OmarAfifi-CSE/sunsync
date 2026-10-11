@@ -73,7 +73,7 @@ Instead of an endless chatbot that traps you at your desk, SunSync determines yo
 │                                  │                                                     │
 │                                  ▼                                                     │
 │                  ┌───────────────────────────────┐                                     │
-│                  │  Google Gemma 2 Local Core    │                                     │
+│                  │  Google Gemma Local Core        │                                     │
 │                  │  (15-Second Action Directive) │                                     │
 │                  └───────────────┬───────────────┘                                     │
 │                                  │                                                     │
@@ -91,9 +91,9 @@ Instead of an endless chatbot that traps you at your desk, SunSync determines yo
 
 | Sponsor Category | Implementation Responsibility | Prize Tier |
 |---|---|---|
-| **Prior Labs TabPFN** | Foundation transformer model evaluating multi-dimensional atmospheric tables for zero-shot Equivalent Melanopic Lux forecasting in <250ms. | **$200 USD** |
+| **Prior Labs TabPFN** | Foundation transformer model evaluating multi-dimensional atmospheric tables for zero-shot Equivalent Melanopic Lux forecasting on live CPU. | **$200 USD** |
 | **Sentry Agent Tracing** | Instruments distributed spans (`ai.telemetry.ingest`, `ai.model.tabpfn`, `ai.llm.gemma`), tracking latency and token metrics. | **$100 USD** |
-| **Google Gemma 2** | Lightweight open-weight local model synthesizing tabular ML outputs into a 15-second human directive. | **$200 USD** |
+| **Google Gemma** | Lightweight open-weight local model synthesizing tabular ML outputs into a 15-second human directive. | **$200 USD** |
 | **ElevenLabs** | Synthesizes eyes-free spoken audio so developers can step into natural daylight without looking at a screen. | **$100 USD** |
 | **Render** | Declarative infrastructure as code (`render.yaml`) hosting the production web service at zero cost. | **$200 USD** |
 
