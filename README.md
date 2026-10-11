@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://sunsync-766905975866.europe-west1.run.app/" target="_blank">
+<a href="https://sunsync.omar-afifi.com/" target="_blank">
   <img src="src/static/favicon.svg" width="110" height="110" alt="SunSync Emblem" style="border-radius: 26px; box-shadow: 0 10px 30px rgba(234, 88, 12, 0.25);" />
 </a>
 
@@ -22,7 +22,7 @@
 
 <p align="center">
   <!-- Tier 2: Quality & Metric Proof Badges -->
-  <img src="https://img.shields.io/badge/Tests-24_Passing-brightgreen?style=flat-square" alt="Tests" />
+  <img src="https://img.shields.io/badge/Tests-25_Passing-brightgreen?style=flat-square" alt="Tests" />
   <img src="https://img.shields.io/badge/Fast--Lane-Progressive_Design-0284C7?style=flat-square" alt="Fast Lane" />
   <img src="https://img.shields.io/badge/Hallucinations-Zero_Tolerance_Gate-7C3AED?style=flat-square" alt="Zero Hallucination" />
   <img src="https://img.shields.io/badge/Telemetry-Sentry_Agent_Tracing-362D59?style=flat-square&logo=sentry&logoColor=white" alt="Sentry" />
@@ -31,15 +31,15 @@
 
 <p align="center">
   <!-- Tier 3: Primary Action Badges -->
-  <a href="https://sunsync-766905975866.europe-west1.run.app/" target="_blank">
-    <img src="https://img.shields.io/badge/🌐_Live_App-Google_Cloud_Run-EA580C?style=for-the-badge&labelColor=0A0A1A" alt="Live App" />
+  <a href="https://sunsync.omar-afifi.com/" target="_blank">
+    <img src="https://img.shields.io/badge/🌐_Live_App-sunsync.omar--afifi.com-EA580C?style=for-the-badge&labelColor=0A0A1A" alt="Live App" />
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;
   <a href="https://dev.to/challenges/hacktoberfest-week1-2026-10-05" target="_blank">
     <img src="https://img.shields.io/badge/📖_Architecture_Deep_Dive-Read_on_DEV.to-0A0A1A?style=for-the-badge&labelColor=0A0A1A&logo=devdotto" alt="Architecture Deep Dive on DEV.to" />
   </a>
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <a href="https://sunsync-766905975866.europe-west1.run.app/docs" target="_blank">
+  <a href="https://sunsync.omar-afifi.com/docs" target="_blank">
     <img src="https://img.shields.io/badge/📡_OpenAPI_Docs-Inspect_API-059669?style=for-the-badge&labelColor=0A0A1A" alt="OpenAPI Docs" />
   </a>
 </p>
@@ -184,7 +184,7 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 
 <br/>
 
-> *Every screen above is captured directly from the live [production service](https://sunsync-766905975866.europe-west1.run.app/) — raw unedited mobile captures, no synthetic mockups.*
+> *Every screen above is captured directly from the live [production service](https://sunsync.omar-afifi.com/) — raw unedited mobile captures, no synthetic mockups.*
 
 ---
 
@@ -231,7 +231,7 @@ Prior Labs' TabPFN tabular transformer runs zero-shot regression on live CPU wit
 | **Cognitive Directive** | **Google Gemma** | `gemma-4-26b-a4b-it` | Lightweight open-weight AI model synthesizing tabular ML outputs into a 15-second human directive via Google AI Studio. |
 | **Eyes-Free Audio** | **ElevenLabs** | `eleven_flash_v2_5` | Real-time speech synthesis using premade Charlie voice (`IKne3meq5aSn9XLyUdCD`) so developers step outside without screens. |
 | **Telemetry & Spans** | **Sentry Agent Tracing** | SDK 2.x | Distributed transaction tracing across `ai.telemetry.ingest`, `ai.model.tabpfn`, and `ai.llm.gemma` spans. |
-| **Cloud Hosting** | **Google Cloud Run** | Docker Container | Fully managed serverless container deployment with 2GB RAM and zero-downtime automatic scaling. |
+| **Cloud Hosting** | **Google Cloud Run** | Docker Container | Fully managed serverless container deployment with 4 vCPUs, 4GB RAM, and custom domain mapping at sunsync.omar-afifi.com. |
 | **Backend Gateway** | **FastAPI** | `0.143.0` (prod build) | Asynchronous high-throughput ASGI web framework powering OpenAPI docs and dual-lane endpoints. |
 | **Data Validation** | **Pydantic** | `2.14.0` (prod build) | Strict type-safety and serialization contracts for photobiological data transfers. |
 | **Atmospheric Source** | **Open-Meteo** | Free REST API | High-resolution hourly solar telemetry (DNI, DHI, UV, cloud cover, elevation). |

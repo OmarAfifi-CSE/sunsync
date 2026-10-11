@@ -17,6 +17,10 @@ RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu 
 COPY src/requirements.txt /app/src/requirements.txt
 RUN pip install --no-cache-dir -r /app/src/requirements.txt
 
+# Pre-download TabPFN foundation weights into image layers during build (fast cloud network)
+# This guarantees container startup probe never waits on weight downloads.
+RUN python -c "from tabpfn import TabPFNRegressor; import numpy as np; reg = TabPFNRegressor(device='cpu', n_estimators=4); reg.fit(np.zeros((12, 5)), np.zeros(12))" || true
+
 # Copy source code
 COPY src/ /app/src/
 

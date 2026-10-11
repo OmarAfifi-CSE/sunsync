@@ -35,12 +35,13 @@ class CircadianMLEngine:
                 self._regressor = "FALLBACK"
                 return
             with self._fit_lock:
+                if self._regressor is not None:
+                    return
                 try:
                     import torch
                     try:
-                        threads = min(4, os.cpu_count() or 1)
+                        threads = max(1, min(4, os.cpu_count() or 1))
                         torch.set_num_threads(threads)
-                        torch.set_num_interop_threads(threads)
                     except Exception:
                         pass
                 except Exception:
@@ -48,35 +49,18 @@ class CircadianMLEngine:
                 try:
                     from tabpfn import TabPFNRegressor
                     self._regressor = TabPFNRegressor(device=self.device, n_estimators=4)
-                except Exception as e:
-                    # Allows running in environments where tabpfn is pre-installing
+                except Exception:
                     self._regressor = "FALLBACK"
 
     def warm_up(self) -> None:
         """
-        Pre-initializes the model AND runs one real background fit on a tiny
-        synthetic daylight frame, so the first user request never pays the cold
-        oneDNN-compile + allocation cost (the ~3-4s "sometimes slow" fit).
-        Never raises.
+        Pre-initializes the model class and PyTorch runtime in background
+        without blocking container startup gates. Never raises.
         """
         try:
             self._init_model()
         except Exception:
             self._regressor = "FALLBACK"
-            return
-        try:
-            frame = pd.DataFrame({
-                "hour": list(range(7, 19)),
-                "diffuse_irradiance_wm2": [120.0] * 12,
-                "direct_irradiance_wm2": [300.0] * 12,
-                "uv_index": [3.0] * 12,
-                "cloud_cover_pct": [20.0] * 12,
-                "solar_elevation_deg": [12.0, 22.0, 32.0, 42.0, 52.0, 60.0,
-                                        60.0, 52.0, 42.0, 32.0, 22.0, 12.0],
-            })
-            self.predict_optimal_window(frame)
-        except Exception:
-            pass
 
     def predict_optimal_window(self, df: pd.DataFrame) -> dict:
         """

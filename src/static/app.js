@@ -32,6 +32,10 @@
   const iconPause = document.getElementById('icon-pause');
   const audioWaves = document.getElementById('audio-waves');
   const audioBtnLabel = document.getElementById('audio-btn-label');
+  const btnPlayAudioHero = document.getElementById('btn-play-audio-hero');
+  const heroIconPlay = document.getElementById('hero-icon-play');
+  const heroIconPause = document.getElementById('hero-icon-pause');
+  const heroPlayLabel = document.getElementById('hero-play-label');
 
   const chartCanvas = document.getElementById('solar-chart-canvas');
   const chartTooltip = document.getElementById('chart-tooltip');
@@ -235,8 +239,7 @@
 
   // ---------- Glance shortcuts (hero buttons mirror main actions) ----------
   function setupGlanceShortcuts() {
-    const heroPlay = document.getElementById('btn-play-audio-hero');
-    if (heroPlay && btnPlayAudio) heroPlay.addEventListener('click', () => btnPlayAudio.click());
+    if (btnPlayAudioHero && btnPlayAudio) btnPlayAudioHero.addEventListener('click', () => btnPlayAudio.click());
     const heroDetox = document.getElementById('btn-start-detox-hero');
     if (heroDetox && btnStartDetox) heroDetox.addEventListener('click', () => btnStartDetox.click());
     const mainDetox = document.getElementById('btn-start-detox-main');
@@ -431,7 +434,17 @@
     if (evalAborter) evalAborter.abort();
     if (directiveAborter) directiveAborter.abort();
     evalAborter = new AbortController();
+    if (isAudioPlaying) {
+      if (currentAudio) { try { currentAudio.pause(); } catch (_) {} }
+      stopBrowserSpeech();
+      setAudioUI(false, 'Listen · eyes-free');
+    }
     setClockLoading(true);
+    document.body.classList.add('is-loading');
+    ['btn-play-audio', 'btn-play-audio-hero', 'btn-copy-directive'].forEach((id) => {
+      const b = document.getElementById(id);
+      if (b) b.disabled = true;
+    });
 
     // Hard timeout: a struggling host must NEVER leave the page stuck in
     // pending-forever. 45s, then a graceful offline state with retry.
@@ -459,6 +472,7 @@
       clearTimeout(fetchTimer);
       if (err && err.name === 'AbortError' && !evalTimedOut) { stopStages(btnTextEl); return; } // superseded: newer tap owns the clock
       setClockLoading(false);
+      document.body.classList.remove('is-loading');
       // Failed before any data: never leave the badge stuck on "writing".
       setDirectiveStatus('', '✎ instant draft');
       if (err && err.name === 'AbortError') {
@@ -890,13 +904,17 @@
 
   // Last-resort voice: if ElevenLabs is down/out of quota mid-judging, the
   // browser itself speaks the same text. Same words, zero network, zero cost.
-  function speakViaBrowser(text) {
+  function speakViaBrowser(text, onEnd) {
     try {
       if (!('speechSynthesis' in window)) return false;
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(text);
       u.rate = 0.95;
       u.pitch = 1.0;
+      if (onEnd) {
+        u.onend = onEnd;
+        u.onerror = () => { if (onEnd) onEnd(); };
+      }
       const vs = window.speechSynthesis.getVoices() || [];
       const pick = vs.find((v) => v.lang && v.lang.toLowerCase().startsWith('en') &&
         /male|daniel|david|guy|george|fred|james/i.test(v.name || ''))
@@ -918,15 +936,18 @@
   function setupAudioPlayer() {
     if (!btnPlayAudio) return;
     btnPlayAudio.addEventListener('click', async () => {
-      if (isAudioPlaying && currentAudio) {
-        currentAudio.pause();
-        setAudioUI(false, 'Listen · eyes-free');
+      if (isAudioPlaying) {
+        if (currentAudio) {
+          try { currentAudio.pause(); } catch (_) {}
+        }
         stopBrowserSpeech();
+        setAudioUI(false, 'Listen · eyes-free');
         return;
       }
       const text = (directiveQuote ? directiveQuote.textContent : '').replace(/^"|"$/g, '').trim();
       setAudioUI(false, 'Synthesizing voice…');
       btnPlayAudio.disabled = true;
+      if (btnPlayAudioHero) btnPlayAudioHero.disabled = true;
       try {
         if (currentAudio) currentAudio.pause();
         currentAudio = await synthesizeAudioElement(text);
@@ -936,20 +957,25 @@
           setAudioUI(false, 'Tap play again 🔊');
           showToast('Browser blocked autoplay — tap play once more');
           btnPlayAudio.disabled = false;
+          if (btnPlayAudioHero) btnPlayAudioHero.disabled = false;
           return;
         }
         setAudioUI(true, 'Playing… eyes closed');
         currentAudio.onended = () => setAudioUI(false, 'Replay brief');
       } catch (err) {
-        if (speakViaBrowser(text)) {
-          showToast('ElevenLabs busy — browser voice reading instead 🔊');
+        const spoke = speakViaBrowser(text, () => {
           setAudioUI(false, 'Replay brief');
+        });
+        if (spoke) {
+          showToast('ElevenLabs busy — browser voice reading instead 🔊');
+          setAudioUI(true, 'Playing… eyes closed');
         } else {
           showToast('Audio playback error: ' + err.message);
           setAudioUI(false, 'Listen · eyes-free');
         }
       } finally {
         btnPlayAudio.disabled = false;
+        if (btnPlayAudioHero) btnPlayAudioHero.disabled = false;
       }
     });
   }
@@ -960,6 +986,24 @@
     if (iconPause) iconPause.classList.toggle('hidden', !playing);
     if (audioWaves) audioWaves.classList.toggle('playing', playing);
     if (audioBtnLabel) audioBtnLabel.textContent = label;
+
+    // Mirror state into Hero button so it behaves identically
+    if (btnPlayAudioHero) {
+      btnPlayAudioHero.classList.toggle('is-playing', playing);
+    }
+    if (heroIconPlay) heroIconPlay.classList.toggle('hidden', playing);
+    if (heroIconPause) heroIconPause.classList.toggle('hidden', !playing);
+    if (heroPlayLabel) {
+      if (playing) {
+        heroPlayLabel.textContent = 'Pause · 15s brief';
+      } else if (label && label.toLowerCase().includes('replay')) {
+        heroPlayLabel.textContent = 'Replay · 15s brief';
+      } else if (label && label.toLowerCase().includes('synthesizing')) {
+        heroPlayLabel.textContent = 'Loading audio…';
+      } else {
+        heroPlayLabel.textContent = 'Listen · 15s brief';
+      }
+    }
   }
 
   // ---------- Copy ----------
